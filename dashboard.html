@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DuitTracker Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: #0a0e17;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header-left .sub { font-size: 12px; color: #64748b; letter-spacing: 2px; text-transform: uppercase; }
+.header-left .title {
+  font-size: 26px; font-weight: 800;
+  background: linear-gradient(135deg, #00d4aa, #0ea5e9);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: #00d4aa15; border: 1px solid #00d4aa30;
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; color: #00d4aa; font-weight: 600;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #00d4aa;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #111827, #1a2236);
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card .icon {
+  position: absolute; top: 14px; right: 16px;
+  font-size: 24px; opacity: 0.8;
+}
+.stat-card .label { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+.stat-card .value {
+  font-size: 22px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.card {
+  background: linear-gradient(135deg, #111827, #1a2236);
+  border: 1px solid #1e293b;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 15px; font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.chart-container { position: relative; height: 220px; margin-bottom: 8px; }
+
+.cat-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 10px 0;
+  border-bottom: 1px solid #1e293b;
+}
+.cat-row:last-child { border-bottom: none; }
+.cat-info { display: flex; align-items: center; gap: 10px; }
+.cat-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.cat-name { font-size: 14px; font-weight: 500; }
+.cat-amount { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; }
+.cat-bar { height: 4px; background: #1e293b; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.cat-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+.expense-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #1e293b;
+}
+.expense-item:last-child { border-bottom: none; }
+.exp-left { display: flex; align-items: center; gap: 12px; }
+.exp-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.exp-note { font-size: 14px; font-weight: 600; }
+.exp-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+.exp-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px; font-weight: 700; color: #ef4444;
+}
+.exp-badge {
+  display: inline-block; padding: 2px 8px;
+  border-radius: 12px; font-size: 10px; font-weight: 600;
+  margin-right: 4px;
+}
+
+.tabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  background: #111827; border-radius: 12px; padding: 4px;
+  border: 1px solid #1e293b;
+}
+.tab {
+  flex: 1; padding: 10px; text-align: center;
+  border-radius: 10px; border: none;
+  background: transparent; color: #64748b;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.2s;
+}
+.tab.active {
+  background: linear-gradient(135deg, #00d4aa, #0ea5e9);
+  color: #000;
+}
+
+.add-form { display: grid; gap: 10px; }
+.add-form input, .add-form select {
+  width: 100%; padding: 12px 14px; border-radius: 10px;
+  border: 1px solid #1e293b; background: #0a0e17;
+  color: #e2e8f0; font-size: 14px; font-family: 'Outfit', sans-serif;
+  outline: none;
+}
+.add-form input:focus, .add-form select:focus {
+  border-color: #00d4aa; box-shadow: 0 0 0 3px #00d4aa20;
+}
+.add-form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-save {
+  padding: 14px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #00d4aa, #0ea5e9);
+  color: #fff; font-weight: 700; font-size: 15px;
+  cursor: pointer; font-family: 'Outfit', sans-serif;
+}
+.btn-save:hover { opacity: 0.9; }
+
+.empty-state { text-align: center; padding: 40px; color: #64748b; }
+.empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+
+.refresh-note {
+  text-align: center; font-size: 12px; color: #64748b;
+  margin-top: 8px;
+}
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+      <div class="sub">DuitTracker</div>
+      <div class="title" id="monthTitle">Loading...</div>
+    </div>
+    <div class="live-badge">
+      <span class="live-dot"></span>
+      Live dari Telegram
+    </div>
+  </div>
+
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><span class="icon">💸</span><div class="label">Total Bulan Ini</div><div class="value" id="statTotal">-</div></div>
+    <div class="stat-card"><span class="icon">📅</span><div class="label">Hari Ini</div><div class="value" id="statToday">-</div></div>
+    <div class="stat-card"><span class="icon">📊</span><div class="label">Rata-rata/Hari</div><div class="value" id="statAvg">-</div></div>
+    <div class="stat-card"><span class="icon">🧾</span><div class="label">Transaksi</div><div class="value" id="statCount">-</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview')">Ringkasan</button>
+    <button class="tab" onclick="switchTab('list')">Riwayat</button>
+    <button class="tab" onclick="switchTab('add')">+ Tambah</button>
+  </div>
+
+  <div id="tabOverview">
+    <div class="card">
+      <div class="card-title">Pengeluaran Harian</div>
+      <div class="chart-container"><canvas id="dailyChart"></canvas></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Per Kategori</div>
+        <div class="chart-container"><canvas id="catChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detail Kategori</div>
+        <div id="catList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tabList" style="display:none">
+    <div class="card">
+      <div class="card-title">Semua Transaksi</div>
+      <div id="expenseList"></div>
+    </div>
+  </div>
+
+  <div id="tabAdd" style="display:none">
+    <div class="card">
+      <div class="card-title">Tambah Pengeluaran via Web</div>
+      <div class="add-form">
+        <div class="row">
+          <input type="number" id="addAmount" placeholder="Jumlah (Rp)">
+          <input type="date" id="addDate">
+        </div>
+        <input type="text" id="addNote" placeholder="Catatan...">
+        <div class="row">
+          <select id="addCategory">
+            <option value="food">Makanan</option>
+            <option value="transport">Transport</option>
+            <option value="shopping">Belanja</option>
+            <option value="bills">Tagihan</option>
+            <option value="health">Kesehatan</option>
+            <option value="entertainment">Hiburan</option>
+            <option value="education">Pendidikan</option>
+            <option value="other">Lainnya</option>
+          </select>
+          <select id="addWallet">
+            <option value="cash">Cash</option>
+            <option value="bca">BCA</option>
+            <option value="bri">BRI</option>
+            <option value="mandiri">Mandiri</option>
+            <option value="gopay">GoPay</option>
+            <option value="ovo">OVO</option>
+            <option value="dana">DANA</option>
+            <option value="shopeepay">ShopeePay</option>
+          </select>
+        </div>
+        <button class="btn-save" onclick="addExpense()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="refresh-note">Auto-refresh setiap 10 detik</div>
+</div>
+
+<script>
+const CAT_META = {
+  food: { icon: "\u{1F35C}", label: "Makanan", color: "#f97316" },
+  transport: { icon: "\u{1F697}", label: "Transport", color: "#3b82f6" },
+  shopping: { icon: "\u{1F6CD}", label: "Belanja", color: "#ec4899" },
+  bills: { icon: "\u{1F4C4}", label: "Tagihan", color: "#8b5cf6" },
+  health: { icon: "\u{1F48A}", label: "Kesehatan", color: "#22c55e" },
+  entertainment: { icon: "\u{1F3AC}", label: "Hiburan", color: "#eab308" },
+  education: { icon: "\u{1F4DA}", label: "Pendidikan", color: "#06b6d4" },
+  other: { icon: "\u{1F4E6}", label: "Lainnya", color: "#94a3b8" },
+};
+
+function formatRp(n) { return "Rp " + Number(n||0).toLocaleString("id-ID"); }
+
+let dailyChartInstance = null;
+let catChartInstance = null;
+
+function switchTab(tab) {
+  document.getElementById("tabOverview").style.display = tab === "overview" ? "block" : "none";
+  document.getElementById("tabList").style.display = tab === "list" ? "block" : "none";
+  document.getElementById("tabAdd").style.display = tab === "add" ? "block" : "none";
+  document.querySelectorAll(".tab").forEach((t, i) => {
+    t.classList.toggle("active", (i === 0 && tab === "overview") || (i === 1 && tab === "list") || (i === 2 && tab === "add"));
+  });
+}
+
+async function loadData() {
+  try {
+    const [summaryRes, expensesRes] = await Promise.all([
+      fetch("/api/summary"),
+      fetch("/api/expenses"),
+    ]);
+    const summary = await summaryRes.json();
+    const expenses = await expensesRes.json();
+
+    document.getElementById("monthTitle").textContent = summary.month;
+    document.getElementById("statTotal").textContent = formatRp(summary.total_month);
+    document.getElementById("statToday").textContent = formatRp(summary.today);
+    document.getElementById("statAvg").textContent = formatRp(summary.avg_daily);
+    document.getElementById("statCount").textContent = summary.count + "x";
+
+    renderDailyChart(summary.by_date);
+    renderCatChart(summary.by_category, summary.total_month);
+    renderCatList(summary.by_category, summary.total_month);
+    renderExpenseList(expenses);
+  } catch (err) {
+    console.error("Load error:", err);
+  }
+}
+
+function renderDailyChart(byDate) {
+  const ctx = document.getElementById("dailyChart").getContext("2d");
+  const dates = [];
+  const now = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  const labels = dates.map(d => { const p = d.split("-"); return p[2] + "/" + p[1]; });
+  const values = dates.map(d => byDate[d] || 0);
+
+  if (dailyChartInstance) dailyChartInstance.destroy();
+  dailyChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: "#00d4aa40",
+        borderColor: "#00d4aa",
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatRp(c.raw) } } },
+      scales: {
+        x: { ticks: { color: "#64748b", font: { size: 10 } }, grid: { color: "#1e293b" } },
+        y: { ticks: { color: "#64748b", font: { size: 10 }, callback: (v) => (v/1000) + "k" }, grid: { color: "#1e293b" } },
+      }
+    }
+  });
+}
+
+function renderCatChart(byCat, total) {
+  const ctx = document.getElementById("catChart").getContext("2d");
+  const entries = Object.entries(byCat).sort((a,b) => b[1] - a[1]);
+  if (!entries.length) return;
+
+  const labels = entries.map(([k]) => CAT_META[k]?.label || k);
+  const values = entries.map(([,v]) => v);
+  const colors = entries.map(([k]) => CAT_META[k]?.color || "#888");
+
+  if (catChartInstance) catChartInstance.destroy();
+  catChartInstance = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: labels,
+      datasets: [{ data: values, backgroundColor: colors, borderColor: "#0a0e17", borderWidth: 3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: "60%",
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => c.label + ": " + formatRp(c.raw) } },
+      }
+    }
+  });
+}
+
+function renderCatList(byCat, total) {
+  const el = document.getElementById("catList");
+  const entries = Object.entries(byCat).sort((a,b) => b[1] - a[1]);
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div>Belum ada data</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(([cat, amt]) => {
+    const m = CAT_META[cat] || CAT_META.other;
+    const pct = total > 0 ? ((amt / total) * 100).toFixed(0) : 0;
+    return '<div class="cat-row">' +
+      '<div class="cat-info">' +
+        '<div class="cat-icon" style="background:' + m.color + '18">' + m.icon + '</div>' +
+        '<div><div class="cat-name">' + m.label + '</div>' +
+          '<div class="cat-bar" style="width:120px"><div class="cat-bar-fill" style="width:' + pct + '%;background:' + m.color + '"></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cat-amount">' + formatRp(amt) + ' <span style="color:#64748b;font-size:11px">(' + pct + '%)</span></div>' +
+    '</div>';
+  }).join("");
+}
+
+function renderExpenseList(expenses) {
+  const el = document.getElementById("expenseList");
+  const sorted = [...expenses].reverse();
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div>Belum ada transaksi.<br>Kirim /catat di Telegram untuk mulai!</div>';
+    return;
+  }
+
+  el.innerHTML = sorted.map((e, i) => {
+    const m = CAT_META[e.category] || CAT_META.other;
+    const src = e.source === "telegram" ? "via Telegram" : e.source === "web" ? "via Web" : "manual";
+    return '<div class="expense-item">' +
+      '<div class="exp-left">' +
+        '<div class="exp-icon" style="background:' + m.color + '18">' + m.icon + '</div>' +
+        '<div>' +
+          '<div class="exp-note">' + (e.note || "-") + '</div>' +
+          '<div class="exp-meta">' +
+            '<span class="exp-badge" style="background:' + m.color + '20;color:' + m.color + '">' + m.label + '</span>' +
+            e.date + ' ' + (e.time || '') + ' &middot; ' + src +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="exp-amount">-' + formatRp(e.amount) + '</div>' +
+    '</div>';
+  }).join("");
+}
+
+async function addExpense() {
+  const amount = parseInt(document.getElementById("addAmount").value);
+  const note = document.getElementById("addNote").value;
+  const cat = document.getElementById("addCategory").value;
+  const wallet = document.getElementById("addWallet").value;
+  const dateVal = document.getElementById("addDate").value;
+
+  if (!amount || !note) { alert("Isi jumlah dan catatan!"); return; }
+
+  const now = new Date();
+  await fetch("/api/expenses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      amount: amount,
+      note: note,
+      category: cat,
+      wallet: wallet,
+      date: dateVal || now.toISOString().split("T")[0],
+      time: now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0"),
+      source: "web",
+    })
+  });
+
+  document.getElementById("addAmount").value = "";
+  document.getElementById("addNote").value = "";
+  switchTab("overview");
+  loadData();
+}
+
+// Set default date
+document.getElementById("addDate").value = new Date().toISOString().split("T")[0];
+
+// Initial load
+loadData();
+
+// Auto-refresh every 10 seconds
+setInterval(loadData, 10000);
+</script>
+</body>
+</html>
