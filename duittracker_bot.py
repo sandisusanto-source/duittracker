@@ -3,6 +3,9 @@ import json
 import csv
 import logging
 import threading
+import base64
+import re
+import tempfile
 from datetime import datetime, date
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -12,9 +15,9 @@ from telegram.ext import (
 )
 from flask import Flask, jsonify, send_from_directory, request
 
-# Token dari environment variable Railway
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 PORT = int(os.environ.get("PORT", 5000))
+GOOGLE_CREDS_JSON = os.environ.get("GOOGLE_CREDENTIALS", "")
 
 DATA_FILE = "expenses.json"
 
@@ -40,6 +43,63 @@ CAT_ICONS = {
     "other": "\U0001f4e6",
 }
 
+FOOD_KEYWORDS = [
+    "nasi", "mie", "ayam", "sapi", "ikan", "udang", "tahu", "tempe",
+    "sayur", "soto", "bakso", "sate", "gado", "rendang", "gulai",
+    "kopi", "teh", "jus", "susu", "es", "air", "cola", "fanta",
+    "makan", "resto", "cafe", "warung", "kantin", "food", "drink",
+    "rice", "chicken", "coffee", "tea", "juice", "milk", "water",
+    "roti", "kue", "snack", "kerupuk", "sambal", "lauk", "naget",
+    "burger", "pizza", "kentang", "topping", "latte", "cappuccino",
+    "americano", "espresso", "matcha", "coklat", "chocolate",
+    "tomoro", "starbucks", "kfc", "mcd", "mcdonalds", "hokben",
+    "geprek", "padang", "warteg", "bakmi", "ramen", "dimsum",
+    "martabak", "gorengan", "pisang", "mangga", "jeruk",
+    "grab food", "gofood", "shopeefood",
+]
+
+TRANSPORT_KEYWORDS = [
+    "bensin", "solar", "bbm", "pertamax", "pertalite",
+    "parkir", "tol", "toll", "grab", "gojek", "taxi", "ojek",
+    "bus", "kereta", "train", "tiket", "pesawat", "flight",
+    "service", "servis", "oli", "ban", "sparepart",
+    "shell", "pertamina", "bp", "vivo",
+]
+
+HEALTH_KEYWORDS = [
+    "obat", "vitamin", "apotek", "pharmacy", "dokter", "doctor",
+    "rumah sakit", "hospital", "klinik", "clinic", "medical",
+    "paracetamol", "amoxicillin", "antibiotik",
+]
+
+BILLS_KEYWORDS = [
+    "listrik", "pln", "air", "pdam", "internet", "wifi",
+    "pulsa", "paket data", "telkomsel", "indosat", "xl",
+    "bpjs", "asuransi", "insurance", "pajak", "tax",
+    "sewa", "rent", "cicilan", "kredit",
+]
+
+ENTERTAINMENT_KEYWORDS = [
+    "bioskop", "cinema", "film", "movie", "game", "voucher",
+    "spotify", "netflix", "youtube", "disney", "nonton",
+    "karaoke", "billiard", "bowling",
+]
+
+EDUCATION_KEYWORDS = [
+    "buku", "book", "kursus", "course", "les", "tutor",
+    "sekolah", "school", "kuliah", "university", "udemy",
+    "training", "seminar", "workshop",
+]
+
+SHOPPING_KEYWORDS = [
+    "baju", "celana", "sepatu", "sandal", "tas", "jaket",
+    "toko", "shop", "store", "mall", "indomaret", "alfamart",
+    "tokopedia", "shopee", "lazada", "blibli",
+    "elektronik", "hp", "charger", "kabel", "aksesoris",
+    "sabun", "shampoo", "sikat", "pasta", "tissue",
+    "deterjen", "pel", "sapu",
+]
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
@@ -63,22 +123,186 @@ def format_rupiah(amount):
     return "Rp {:,.0f}".format(amount).replace(",", ".")
 
 
+def detect_category(text):
+    lower = text.lower()
+    scores = {
+        "food": 0,
+        "transport": 0,
+        "health": 0,
+        "bills": 0,
+        "entertainment": 0,
+        "education": 0,
+        "shopping": 0,
+    }
+    for kw in FOOD_KEYWORDS:
+        if kw in lower:
+            scores["food"] += 1
+    for kw in TRANSPORT_KEYWORDS:
+        if kw in lower:
+            scores["transport"] += 1
+    for kw in HEALTH_KEYWORDS:
+        if kw in lower:
+            scores["health"] += 1
+    for kw in BILLS_KEYWORDS:
+        if kw in lower:
+            scores["bills"] += 1
+    for kw in ENTERTAINMENT_KEYWORDS:
+        if kw in lower:
+            scores["entertainment"] += 1
+    for kw in EDUCATION_KEYWORDS:
+        if kw in lower:
+            scores["education"] += 1
+    for kw in SHOPPING_KEYWORDS:
+        if kw in lower:
+            scores["shopping"] += 1
+
+    best = max(scores, key=scores.get)
+    if scores[best] > 0:
+        return best
+    return "other"
+
+
+def parse_receipt_text(ocr_text):
+    lines = ocr_text.split("\n")
+    store_name = ""
+    items = []
+    total = 0
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if i < 5 and len(stripped) > 2 and not any(c.isdigit() for c in stripped[:3]):
+            if not store_name and len(stripped) > 3:
+                store_name = stripped
+
+    price_pattern = re.compile(r"(\d{1,3}(?:[.,]\d{3})*(?:\.\d{2})?)\s*$")
+    total_pattern = re.compile(r"(?:total|grand\s*total|jumlah|subtotal|sub\s*total)\s*[:\s]*(?:rp\.?\s*)?(\d{1,3}(?:[.,]\d{3})*)", re.IGNORECASE)
+
+    for line in lines:
+        total_match = total_pattern.search(line)
+        if total_match:
+            amount_str = total_match.group(1).replace(".", "").replace(",", "")
+            try:
+                found_total = int(amount_str)
+                if found_total > total:
+                    total = found_total
+            except ValueError:
+                pass
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or len(stripped) < 3:
+            continue
+
+        skip_words = ["tanggal", "date", "waktu", "time", "kasir", "cashier",
+                      "no.", "order", "struk", "receipt", "terima kasih",
+                      "thank", "alamat", "address", "telp", "phone",
+                      "ppn", "tax", "diskon", "discount", "kembalian",
+                      "change", "tunai", "cash", "debit", "credit",
+                      "qris", "gopay", "ovo", "dana", "shopeepay",
+                      "member", "poin", "point", "hotline", "customer",
+                      "download", "feedback", "inclusive"]
+        lower_line = stripped.lower()
+        if any(sw in lower_line for sw in skip_words):
+            continue
+
+        price_match = price_pattern.search(stripped)
+        if price_match:
+            amount_str = price_match.group(1).replace(".", "").replace(",", "")
+            try:
+                price = int(amount_str)
+                if 500 <= price <= 50000000:
+                    name_part = stripped[:price_match.start()].strip()
+                    name_part = re.sub(r"^[\d\s.x×*]+", "", name_part).strip()
+                    name_part = re.sub(r"[Rr]p\.?\s*$", "", name_part).strip()
+                    if len(name_part) > 1:
+                        qty_match = re.search(r"(\d+)\s*[x×*]", stripped[:price_match.start()])
+                        qty = int(qty_match.group(1)) if qty_match else 1
+                        items.append({
+                            "name": name_part,
+                            "qty": qty,
+                            "price": price,
+                        })
+            except ValueError:
+                pass
+
+    if not total and items:
+        total = sum(i["price"] for i in items)
+
+    if not total:
+        all_numbers = re.findall(r"\d{1,3}(?:[.,]\d{3})+", ocr_text)
+        amounts = []
+        for n in all_numbers:
+            try:
+                val = int(n.replace(".", "").replace(",", ""))
+                if val >= 1000:
+                    amounts.append(val)
+            except ValueError:
+                pass
+        if amounts:
+            total = max(amounts)
+
+    return {
+        "store": store_name,
+        "items": items,
+        "total": total,
+    }
+
+
+def setup_google_credentials():
+    if not GOOGLE_CREDS_JSON:
+        return None
+    try:
+        creds_dict = json.loads(GOOGLE_CREDS_JSON)
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(creds_dict, tmp)
+        tmp.close()
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmp.name
+        return tmp.name
+    except Exception as e:
+        logger.error("Failed to setup Google credentials: " + str(e))
+        return None
+
+
+def ocr_image(image_bytes):
+    try:
+        from google.cloud import vision
+        client = vision.ImageAnnotatorClient()
+        image = vision.Image(content=image_bytes)
+        response = client.text_detection(image=image)
+        if response.error.message:
+            logger.error("Vision API error: " + response.error.message)
+            return ""
+        texts = response.text_annotations
+        if texts:
+            return texts[0].description
+        return ""
+    except ImportError:
+        logger.error("google-cloud-vision not installed")
+        return ""
+    except Exception as e:
+        logger.error("OCR error: " + str(e))
+        return ""
+
+
 async def start(update, ctx):
     welcome = (
         "DuitTracker Bot\n"
         "================\n\n"
         "Hai! Aku bot pencatat pengeluaran kamu.\n\n"
         "Cara Pakai:\n"
-        "- Catat: /catat 50000 makan siang\n"
-        "- Atau ketik langsung: 50000 makan siang\n"
-        "- Laporan bulan ini: /laporan\n"
+        "- Foto nota/struk langsung kirim ke sini\n"
+        "- Atau ketik: 50000 makan siang\n"
+        "- Atau: /catat 50000 makan siang\n"
+        "- Laporan: /laporan\n"
         "- Hari ini: /hari\n"
         "- Riwayat: /riwayat\n"
-        "- Per kategori: /kategori\n"
+        "- Kategori: /kategori\n"
         "- Hapus: /hapus [nomor]\n"
-        "- Export CSV: /export\n"
-        "- Dashboard web: /web\n\n"
-        "Yuk mulai catat pengeluaran!"
+        "- Export: /export\n"
+        "- Dashboard: /web\n\n"
+        "Langsung kirim foto nota aja!"
     )
     await update.message.reply_text(welcome)
 
@@ -101,41 +325,46 @@ async def catat(update, ctx):
         args = ctx.args
         if not args or len(args) < 2:
             await update.message.reply_text(
-                "Format salah!\n\n"
-                "Cara pakai:\n"
-                "/catat [jumlah] [catatan]\n\n"
-                "Contoh:\n"
-                "/catat 50000 makan siang\n"
-                "/catat 150000 bensin motor"
+                "Format: /catat [jumlah] [catatan]\n"
+                "Contoh: /catat 50000 makan siang\n\n"
+                "Atau langsung kirim foto nota!"
             )
             return
 
         amount = int(args[0].replace(".", "").replace(",", ""))
         note = " ".join(args[1:])
+        category = detect_category(note)
 
-        ctx.user_data["pending"] = {
+        expense = {
             "amount": amount,
             "note": note,
             "date": datetime.now().strftime("%Y-%m-%d"),
             "time": datetime.now().strftime("%H:%M"),
+            "category": category,
+            "wallet": "cash",
+            "source": "telegram",
         }
 
-        keyboard = []
-        row = []
-        for key in CATEGORIES:
-            icon = CAT_ICONS.get(key, "")
-            label = icon + " " + CATEGORIES[key]
-            row.append(InlineKeyboardButton(label, callback_data="cat_" + key))
-            if len(row) == 2:
-                keyboard.append(row)
-                row = []
-        if row:
-            keyboard.append(row)
+        data = load_data()
+        data.append(expense)
+        save_data(data)
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        icon = CAT_ICONS.get(category, "")
+        cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
+
+        keyboard = [[
+            InlineKeyboardButton("Ubah Kategori", callback_data="chg_" + str(len(data) - 1))
+        ]]
+
         await update.message.reply_text(
-            format_rupiah(amount) + "\n" + note + "\n\nPilih kategori:",
-            reply_markup=reply_markup,
+            "Tercatat!\n"
+            "================\n"
+            + format_rupiah(amount) + "\n"
+            + note + "\n"
+            + cat_label + " (otomatis)\n"
+            + expense["date"] + " " + expense["time"] + "\n\n"
+            "Kategori salah? Klik tombol di bawah.",
+            reply_markup=InlineKeyboardMarkup(keyboard),
         )
 
     except ValueError:
@@ -144,47 +373,96 @@ async def catat(update, ctx):
         )
 
 
-async def handle_category_selection(update, ctx):
+async def handle_category_change(update, ctx):
     query = update.callback_query
     await query.answer()
 
-    if not query.data.startswith("cat_"):
-        return
+    if query.data.startswith("chg_"):
+        idx = query.data.replace("chg_", "")
+        ctx.user_data["change_idx"] = int(idx)
 
-    category = query.data.replace("cat_", "")
-    pending = ctx.user_data.get("pending")
+        keyboard = []
+        row = []
+        for key in CATEGORIES:
+            icon = CAT_ICONS.get(key, "")
+            label = icon + " " + CATEGORIES[key]
+            row.append(InlineKeyboardButton(label, callback_data="setcat_" + key))
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+        if row:
+            keyboard.append(row)
 
-    if not pending:
-        await query.edit_message_text("Data tidak ditemukan, coba catat ulang.")
-        return
+        await query.edit_message_text(
+            "Pilih kategori yang benar:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
 
-    expense = {
-        "amount": pending["amount"],
-        "note": pending["note"],
-        "date": pending["date"],
-        "time": pending["time"],
-        "category": category,
-        "wallet": "cash",
-        "source": "telegram",
-    }
+    elif query.data.startswith("setcat_"):
+        category = query.data.replace("setcat_", "")
+        idx = ctx.user_data.get("change_idx")
 
-    data = load_data()
-    data.append(expense)
-    save_data(data)
+        if idx is not None:
+            data = load_data()
+            if 0 <= idx < len(data):
+                data[idx]["category"] = category
+                save_data(data)
+                icon = CAT_ICONS.get(category, "")
+                cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
+                e = data[idx]
+                await query.edit_message_text(
+                    "Kategori diupdate!\n"
+                    "================\n"
+                    + format_rupiah(e["amount"]) + "\n"
+                    + e["note"] + "\n"
+                    + cat_label + "\n"
+                    + e["date"] + " " + e.get("time", "")
+                )
+            else:
+                await query.edit_message_text("Data tidak ditemukan.")
+        else:
+            await query.edit_message_text("Data tidak ditemukan.")
 
-    del ctx.user_data["pending"]
+    elif query.data.startswith("conf_"):
+        idx = int(query.data.replace("conf_", ""))
+        await query.edit_message_text(
+            query.message.text + "\n\nTersimpan!"
+        )
 
-    icon = CAT_ICONS.get(category, "")
-    cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
-    await query.edit_message_text(
-        "Tercatat!\n"
-        "================\n"
-        + format_rupiah(expense["amount"]) + "\n"
-        + expense["note"] + "\n"
-        + cat_label + "\n"
-        + expense["date"] + " " + expense["time"] + "\n\n"
-        "Lihat dashboard: /web"
-    )
+    elif query.data.startswith("cat_"):
+        category = query.data.replace("cat_", "")
+        pending = ctx.user_data.get("pending")
+
+        if not pending:
+            await query.edit_message_text("Data tidak ditemukan, coba catat ulang.")
+            return
+
+        expense = {
+            "amount": pending["amount"],
+            "note": pending["note"],
+            "date": pending["date"],
+            "time": pending["time"],
+            "category": category,
+            "wallet": "cash",
+            "source": "telegram",
+        }
+
+        data = load_data()
+        data.append(expense)
+        save_data(data)
+
+        del ctx.user_data["pending"]
+
+        icon = CAT_ICONS.get(category, "")
+        cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
+        await query.edit_message_text(
+            "Tercatat!\n"
+            "================\n"
+            + format_rupiah(expense["amount"]) + "\n"
+            + expense["note"] + "\n"
+            + cat_label + "\n"
+            + expense["date"] + " " + expense["time"]
+        )
 
 
 async def hapus(update, ctx):
@@ -381,18 +659,98 @@ async def export_csv(update, ctx):
 
 
 async def handle_photo(update, ctx):
-    photo = update.message.photo[-1]
-    file = await ctx.bot.get_file(photo.file_id)
-    file_path = "receipts/" + photo.file_id + ".jpg"
-    os.makedirs("receipts", exist_ok=True)
-    await file.download_to_drive(file_path)
+    await update.message.reply_text("Membaca nota... tunggu sebentar.")
 
-    await update.message.reply_text(
-        "Foto nota diterima dan tersimpan!\n\n"
-        "OCR belum aktif.\n"
-        "Untuk sementara, catat manual:\n"
-        "/catat [jumlah] [catatan]"
-    )
+    try:
+        photo = update.message.photo[-1]
+        file = await ctx.bot.get_file(photo.file_id)
+        image_bytes = await file.download_as_bytearray()
+
+        ocr_text = ocr_image(bytes(image_bytes))
+
+        if not ocr_text:
+            await update.message.reply_text(
+                "Tidak bisa membaca nota.\n"
+                "Coba foto ulang dengan pencahayaan lebih baik,\n"
+                "atau catat manual: /catat [jumlah] [catatan]"
+            )
+            return
+
+        receipt = parse_receipt_text(ocr_text)
+        category = detect_category(ocr_text)
+
+        if receipt["total"] <= 0:
+            await update.message.reply_text(
+                "Nota terbaca tapi tidak bisa detect total.\n\n"
+                "Teks yang terbaca:\n"
+                + ocr_text[:500] + "\n\n"
+                "Catat manual: /catat [jumlah] [catatan]"
+            )
+            return
+
+        store = receipt["store"] if receipt["store"] else "Nota"
+        items_text = ""
+        if receipt["items"]:
+            for item in receipt["items"][:8]:
+                items_text += (
+                    "  " + item["name"]
+                    + " x" + str(item["qty"])
+                    + " = " + format_rupiah(item["price"]) + "\n"
+                )
+
+        note = store
+        if receipt["items"]:
+            item_names = [i["name"] for i in receipt["items"][:3]]
+            note = store + " - " + ", ".join(item_names)
+
+        expense = {
+            "amount": receipt["total"],
+            "note": note,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": datetime.now().strftime("%H:%M"),
+            "category": category,
+            "wallet": "cash",
+            "source": "ocr",
+            "items": receipt["items"][:8],
+        }
+
+        data = load_data()
+        data.append(expense)
+        save_data(data)
+
+        icon = CAT_ICONS.get(category, "")
+        cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
+
+        keyboard = [[
+            InlineKeyboardButton("Ubah Kategori", callback_data="chg_" + str(len(data) - 1))
+        ]]
+
+        msg = (
+            "Nota terbaca!\n"
+            "================\n"
+        )
+        if store:
+            msg += "Toko: " + store + "\n"
+        if items_text:
+            msg += "\nItem:\n" + items_text
+        msg += (
+            "\nTotal: " + format_rupiah(receipt["total"]) + "\n"
+            + cat_label + " (otomatis)\n"
+            + expense["date"] + " " + expense["time"] + "\n\n"
+            "Kategori salah? Klik tombol di bawah."
+        )
+
+        await update.message.reply_text(
+            msg,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+
+    except Exception as e:
+        logger.error("Photo handler error: " + str(e))
+        await update.message.reply_text(
+            "Error membaca nota: " + str(e) + "\n"
+            "Catat manual: /catat [jumlah] [catatan]"
+        )
 
 
 async def handle_text(update, ctx):
@@ -407,38 +765,46 @@ async def handle_text(update, ctx):
         amount_str = amount_str.replace("k", "000").replace("K", "000")
         amount = int(amount_str)
         note = parts[1] if len(parts) > 1 else "Tanpa catatan"
+        category = detect_category(note)
 
-        ctx.user_data["pending"] = {
+        expense = {
             "amount": amount,
             "note": note,
             "date": datetime.now().strftime("%Y-%m-%d"),
             "time": datetime.now().strftime("%H:%M"),
+            "category": category,
+            "wallet": "cash",
+            "source": "telegram",
         }
 
-        keyboard = []
-        row = []
-        for key in CATEGORIES:
-            icon = CAT_ICONS.get(key, "")
-            label = icon + " " + CATEGORIES[key]
-            row.append(InlineKeyboardButton(label, callback_data="cat_" + key))
-            if len(row) == 2:
-                keyboard.append(row)
-                row = []
-        if row:
-            keyboard.append(row)
+        data = load_data()
+        data.append(expense)
+        save_data(data)
+
+        icon = CAT_ICONS.get(category, "")
+        cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
+
+        keyboard = [[
+            InlineKeyboardButton("Ubah Kategori", callback_data="chg_" + str(len(data) - 1))
+        ]]
 
         await update.message.reply_text(
-            format_rupiah(amount) + "\n" + note + "\n\nPilih kategori:",
+            "Tercatat!\n"
+            "================\n"
+            + format_rupiah(amount) + "\n"
+            + note + "\n"
+            + cat_label + " (otomatis)\n"
+            + expense["date"] + " " + expense["time"],
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
+
     except (ValueError, IndexError):
         await update.message.reply_text(
-            "Aku ga ngerti. Coba:\n\n"
-            "- /catat 50000 makan siang\n"
-            "- Ketik: 50000 makan siang\n"
-            "- Ketik: 50k kopi\n"
-            "- /laporan\n"
-            "- /riwayat"
+            "Kirim foto nota, atau ketik:\n"
+            "50000 makan siang\n"
+            "25k kopi\n"
+            "/laporan\n"
+            "/riwayat"
         )
 
 
@@ -534,12 +900,18 @@ def main():
         print("=" * 50)
         return
 
+    setup_google_credentials()
+
     web_thread = threading.Thread(target=run_web, daemon=True)
     web_thread.start()
     print("Dashboard jalan di port " + str(PORT))
 
     print("=" * 50)
     print("DuitTracker AKTIF!")
+    if GOOGLE_CREDS_JSON:
+        print("OCR: Google Cloud Vision AKTIF")
+    else:
+        print("OCR: TIDAK AKTIF (GOOGLE_CREDENTIALS belum diset)")
     print("=" * 50)
 
     app = Application.builder().token(BOT_TOKEN).build()
@@ -553,7 +925,7 @@ def main():
     app.add_handler(CommandHandler("kategori", kategori))
     app.add_handler(CommandHandler("export", export_csv))
     app.add_handler(CommandHandler("web", web_link))
-    app.add_handler(CallbackQueryHandler(handle_category_selection))
+    app.add_handler(CallbackQueryHandler(handle_category_change))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
