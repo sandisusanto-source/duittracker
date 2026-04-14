@@ -3,7 +3,7 @@ import json
 import csv
 import logging
 import threading
-import re
+import base64
 import io
 from datetime import datetime, date
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -13,10 +13,11 @@ from telegram.ext import (
     filters, ContextTypes
 )
 from flask import Flask, jsonify, send_from_directory, request
-from PIL import Image, ImageEnhance, ImageFilter
-import pytesseract
+from PIL import Image
+import anthropic
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 PORT = int(os.environ.get("PORT", 5000))
 DATA_FILE = "expenses.json"
 
@@ -42,55 +43,47 @@ CAT_ICONS = {
     "other": "\U0001f4e6",
 }
 
-FOOD_KW = [
-    "nasi", "mie", "ayam", "sapi", "ikan", "udang", "tahu", "tempe",
-    "sayur", "soto", "bakso", "sate", "rendang", "gulai", "geprek",
-    "kopi", "teh", "jus", "susu", "es", "air", "cola", "fanta",
-    "makan", "resto", "cafe", "warung", "kantin", "food", "drink",
-    "rice", "chicken", "coffee", "tea", "juice", "milk", "water",
-    "roti", "kue", "snack", "kerupuk", "sambal", "lauk",
-    "burger", "pizza", "kentang", "topping", "latte", "cappuccino",
-    "americano", "espresso", "matcha", "coklat", "chocolate",
-    "tomoro", "starbucks", "kfc", "mcd", "hokben", "padang",
-    "bakmi", "ramen", "dimsum", "martabak", "gorengan",
-    "grab food", "gofood", "shopeefood", "aren", "iced",
-]
-TRANSPORT_KW = [
-    "bensin", "solar", "bbm", "pertamax", "pertalite",
-    "parkir", "tol", "grab", "gojek", "taxi", "ojek",
-    "bus", "kereta", "tiket", "pesawat", "service", "servis",
-    "oli", "ban", "shell", "pertamina",
-]
-HEALTH_KW = [
-    "obat", "vitamin", "apotek", "dokter", "rumah sakit",
-    "klinik", "medical", "paracetamol",
-]
-BILLS_KW = [
-    "listrik", "pln", "pdam", "internet", "wifi",
-    "pulsa", "telkomsel", "indosat", "xl",
-    "bpjs", "asuransi", "pajak", "sewa", "cicilan",
-]
-ENTERTAIN_KW = [
-    "bioskop", "cinema", "film", "game", "voucher",
-    "spotify", "netflix", "nonton", "karaoke",
-]
-EDUCATION_KW = [
-    "buku", "book", "kursus", "course", "les",
-    "sekolah", "kuliah", "udemy", "training",
-]
-SHOPPING_KW = [
-    "baju", "celana", "sepatu", "sandal", "tas", "jaket",
-    "toko", "shop", "mall", "indomaret", "alfamart",
-    "tokopedia", "shopee", "lazada", "elektronik",
-    "charger", "kabel", "aksesoris", "sabun", "shampoo",
-    "deterjen",
-]
-
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
+
+claude_client = None
+
+SYSTEM_PROMPT = """Kamu adalah DuitTracker, asisten pencatat pengeluaran pribadi via Telegram.
+
+TUGAS UTAMA:
+1. Ketika user kirim FOTO NOTA/STRUK: baca semua item, harga, total, nama toko. Balas dalam format JSON.
+2. Ketika user kirim TEKS berisi angka: catat sebagai pengeluaran.
+3. Ketika user minta KOREKSI: update data yang sudah tercatat.
+4. Ketika user tanya LAPORAN: berikan ringkasan.
+
+FORMAT RESPONSE untuk foto nota - HARUS JSON valid di dalam tag <receipt>:
+<receipt>
+{"store":"nama toko","items":[{"name":"nama item","qty":1,"price":32000}],"total":61000,"category":"food","payment":"cash","note":"ringkasan singkat"}
+</receipt>
+
+FORMAT RESPONSE untuk koreksi data - HARUS JSON valid di dalam tag <correction>:
+<correction>
+{"action":"update","field":"amount","old_value":81000,"new_value":61000}
+</correction>
+
+FORMAT RESPONSE untuk catat manual - HARUS JSON valid di dalam tag <expense>:
+<expense>
+{"amount":50000,"note":"makan siang","category":"food"}
+</expense>
+
+KATEGORI yang tersedia: food, transport, shopping, bills, health, entertainment, education, other
+
+ATURAN:
+- Selalu balas dalam bahasa Indonesia yang santai dan ramah
+- Untuk foto nota: baca SEMUA teks dengan teliti, perhatikan TOTAL dan GRAND TOTAL
+- Perhatikan metode pembayaran (Cash, QRIS, GoPay, OVO, dll)
+- Kalau nota tidak jelas, tanya user
+- Kalau user koreksi, langsung update tanpa banyak tanya
+- Setelah JSON tag, tambahkan pesan konfirmasi yang friendly
+- JANGAN pernah mengarang data yang tidak ada di nota"""
 
 
 def load_data():
@@ -109,141 +102,100 @@ def format_rupiah(amount):
     return "Rp {:,.0f}".format(amount).replace(",", ".")
 
 
-def detect_category(text):
-    lower = text.lower()
-    scores = {"food": 0, "transport": 0, "health": 0, "bills": 0,
-              "entertainment": 0, "education": 0, "shopping": 0}
-    for kw in FOOD_KW:
-        if kw in lower:
-            scores["food"] += 1
-    for kw in TRANSPORT_KW:
-        if kw in lower:
-            scores["transport"] += 1
-    for kw in HEALTH_KW:
-        if kw in lower:
-            scores["health"] += 1
-    for kw in BILLS_KW:
-        if kw in lower:
-            scores["bills"] += 1
-    for kw in ENTERTAIN_KW:
-        if kw in lower:
-            scores["entertainment"] += 1
-    for kw in EDUCATION_KW:
-        if kw in lower:
-            scores["education"] += 1
-    for kw in SHOPPING_KW:
-        if kw in lower:
-            scores["shopping"] += 1
-    best = max(scores, key=scores.get)
-    return best if scores[best] > 0 else "other"
+def get_conversation(ctx):
+    if "conversation" not in ctx.user_data:
+        ctx.user_data["conversation"] = []
+    return ctx.user_data["conversation"]
 
 
-def ocr_receipt(image_bytes):
+def add_to_conversation(ctx, role, content):
+    conv = get_conversation(ctx)
+    conv.append({"role": role, "content": content})
+    if len(conv) > 20:
+        ctx.user_data["conversation"] = conv[-20:]
+
+
+def ask_claude(messages, image_data=None):
+    if not claude_client:
+        return None
+
+    api_messages = []
+    for msg in messages[-10:]:
+        api_messages.append({"role": msg["role"], "content": msg["content"]})
+
+    if image_data:
+        last_msg = api_messages[-1] if api_messages else None
+        img_content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": image_data,
+                }
+            },
+            {
+                "type": "text",
+                "text": last_msg["content"] if last_msg and last_msg["role"] == "user" else "Baca nota ini dan extract semua data."
+            }
+        ]
+        if last_msg and last_msg["role"] == "user":
+            api_messages[-1]["content"] = img_content
+        else:
+            api_messages.append({"role": "user", "content": img_content})
+
     try:
-        img = Image.open(io.BytesIO(image_bytes))
-        img = img.convert("L")
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(2.0)
-        enhancer2 = ImageEnhance.Sharpness(img)
-        img = enhancer2.enhance(2.0)
-        img = img.filter(ImageFilter.MedianFilter(size=3))
-        width, height = img.size
-        if width < 1000:
-            ratio = 1500 / width
-            img = img.resize((1500, int(height * ratio)), Image.LANCZOS)
-        text = pytesseract.image_to_string(img, lang="ind+eng",
-            config="--psm 6 --oem 3")
-        if not text.strip():
-            text = pytesseract.image_to_string(img, lang="ind+eng",
-                config="--psm 4 --oem 3")
-        if not text.strip():
-            text = pytesseract.image_to_string(img, lang="ind+eng",
-                config="--psm 3 --oem 3")
-        return text
+        response = claude_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            system=SYSTEM_PROMPT,
+            messages=api_messages,
+        )
+        return response.content[0].text
     except Exception as e:
-        logger.error("OCR error: " + str(e))
-        return ""
+        logger.error("Claude API error: " + str(e))
+        return None
 
 
-def parse_receipt(ocr_text):
-    lines = ocr_text.split("\n")
-    store_name = ""
-    items = []
-    total = 0
+def parse_receipt_response(text):
+    import re
+    match = re.search(r"<receipt>\s*(\{.*?\})\s*</receipt>", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+    return None
 
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if i < 6 and len(stripped) > 2:
-            upper_count = sum(1 for c in stripped if c.isupper())
-            if upper_count > len(stripped) * 0.4 and not any(c.isdigit() for c in stripped[:4]):
-                if not store_name and len(stripped) > 2:
-                    clean = re.sub(r"[^a-zA-Z\s]", "", stripped).strip()
-                    if len(clean) > 2:
-                        store_name = clean
 
-    total_pattern = re.compile(
-        r"(?:total|grand\s*total|jumlah|amount)\s*[:\s]*(?:rp\.?\s*)?(\d{1,3}(?:[.,]\d{3})*(?:\.\d{2})?)",
-        re.IGNORECASE)
-    for line in lines:
-        m = total_pattern.search(line)
-        if m:
-            amt_str = m.group(1).replace(".", "").replace(",", "")
-            try:
-                val = int(amt_str)
-                if val > total:
-                    total = val
-            except ValueError:
-                pass
+def parse_correction_response(text):
+    import re
+    match = re.search(r"<correction>\s*(\{.*?\})\s*</correction>", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+    return None
 
-    price_pat = re.compile(r"(\d{1,3}(?:[.,]\d{3})+)\s*$")
-    skip_words = ["tanggal", "date", "waktu", "time", "kasir", "cashier",
-                   "no", "order", "struk", "receipt", "terima kasih",
-                   "thank", "alamat", "telp", "phone", "ppn", "tax",
-                   "diskon", "discount", "kembalian", "change", "tunai",
-                   "cash", "debit", "credit", "qris", "gopay", "ovo",
-                   "dana", "shopeepay", "member", "poin", "hotline",
-                   "customer", "download", "feedback", "inclusive",
-                   "subtotal", "sub total", "rounding"]
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or len(stripped) < 4:
-            continue
-        lower_line = stripped.lower()
-        if any(sw in lower_line for sw in skip_words):
-            continue
-        pm = price_pat.search(stripped)
-        if pm:
-            amt_str = pm.group(1).replace(".", "").replace(",", "")
-            try:
-                price = int(amt_str)
-                if 500 <= price <= 50000000:
-                    name = stripped[:pm.start()].strip()
-                    name = re.sub(r"^[\d\s.x*]+", "", name).strip()
-                    name = re.sub(r"[Rr]p\.?\s*$", "", name).strip()
-                    if len(name) > 1:
-                        items.append({"name": name, "qty": 1, "price": price})
-            except ValueError:
-                pass
 
-    if not total and items:
-        total = sum(i["price"] for i in items)
+def parse_expense_response(text):
+    import re
+    match = re.search(r"<expense>\s*(\{.*?\})\s*</expense>", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+    return None
 
-    if not total:
-        all_nums = re.findall(r"\d{1,3}(?:[.,]\d{3})+", ocr_text)
-        amounts = []
-        for n in all_nums:
-            try:
-                val = int(n.replace(".", "").replace(",", ""))
-                if val >= 1000:
-                    amounts.append(val)
-            except ValueError:
-                pass
-        if amounts:
-            total = max(amounts)
 
-    return {"store": store_name, "items": items, "total": total}
+def clean_response(text):
+    import re
+    text = re.sub(r"<receipt>.*?</receipt>", "", text, flags=re.DOTALL)
+    text = re.sub(r"<correction>.*?</correction>", "", text, flags=re.DOTALL)
+    text = re.sub(r"<expense>.*?</expense>", "", text, flags=re.DOTALL)
+    return text.strip()
 
 
 # ════════════════════════════════════════
@@ -251,22 +203,31 @@ def parse_receipt(ocr_text):
 # ════════════════════════════════════════
 
 async def start(update, ctx):
+    ctx.user_data["conversation"] = []
     await update.message.reply_text(
         "DuitTracker Bot\n"
         "================\n\n"
-        "Cara Pakai:\n"
-        "- Kirim foto nota/struk\n"
-        "- Ketik: 50000 makan siang\n"
-        "- Ketik: 50k kopi\n"
-        "- /laporan - ringkasan bulan ini\n"
-        "- /hari - pengeluaran hari ini\n"
-        "- /riwayat - 10 terakhir\n"
-        "- /kategori - per kategori\n"
-        "- /hapus [no] - hapus transaksi\n"
-        "- /export - download CSV\n"
-        "- /web - buka dashboard\n\n"
-        "Langsung kirim foto nota aja!"
+        "Hai! Kirim aja foto nota, aku langsung baca.\n\n"
+        "Atau ketik:\n"
+        "- 50000 makan siang\n"
+        "- 25k kopi\n\n"
+        "Mau koreksi? Tinggal bilang aja.\n"
+        "Misal: 'salah, harusnya 61000'\n\n"
+        "Command:\n"
+        "/laporan - ringkasan bulan ini\n"
+        "/hari - pengeluaran hari ini\n"
+        "/riwayat - 10 terakhir\n"
+        "/hapus [no] - hapus transaksi\n"
+        "/export - download CSV\n"
+        "/web - buka dashboard\n"
+        "/reset - reset percakapan"
     )
+
+
+async def reset(update, ctx):
+    ctx.user_data["conversation"] = []
+    ctx.user_data.pop("last_expense_idx", None)
+    await update.message.reply_text("Percakapan direset!")
 
 
 async def web_link(update, ctx):
@@ -279,14 +240,21 @@ async def catat(update, ctx):
     try:
         args = ctx.args
         if not args or len(args) < 2:
-            await update.message.reply_text(
-                "Format: /catat 50000 makan siang\n"
-                "Atau langsung kirim foto nota!"
-            )
+            await update.message.reply_text("Format: /catat 50000 makan siang")
             return
         amount = int(args[0].replace(".", "").replace(",", ""))
         note = " ".join(args[1:])
-        category = detect_category(note)
+
+        add_to_conversation(ctx, "user", "/catat " + str(amount) + " " + note)
+        response = ask_claude(get_conversation(ctx))
+
+        category = "other"
+        if response:
+            exp = parse_expense_response(response)
+            if exp and "category" in exp:
+                category = exp["category"]
+            add_to_conversation(ctx, "assistant", response)
+
         expense = {
             "amount": amount, "note": note,
             "date": datetime.now().strftime("%Y-%m-%d"),
@@ -296,17 +264,20 @@ async def catat(update, ctx):
         data = load_data()
         data.append(expense)
         save_data(data)
+        ctx.user_data["last_expense_idx"] = len(data) - 1
+
         icon = CAT_ICONS.get(category, "")
-        cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
-        keyboard = [[InlineKeyboardButton(
-            "Ubah Kategori", callback_data="chg_" + str(len(data) - 1))]]
-        await update.message.reply_text(
-            "Tercatat!\n================\n"
-            + format_rupiah(amount) + "\n" + note + "\n"
-            + cat_label + " (otomatis)\n"
-            + expense["date"] + " " + expense["time"],
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
+        cl = icon + " " + CATEGORIES.get(category, "Lainnya")
+
+        friendly = clean_response(response) if response else ""
+        msg = ("Tercatat!\n================\n"
+            + format_rupiah(amount) + "\n" + note + "\n" + cl + "\n"
+            + expense["date"] + " " + expense["time"])
+        if friendly:
+            msg += "\n\n" + friendly
+
+        await update.message.reply_text(msg)
+
     except ValueError:
         await update.message.reply_text("Jumlah harus angka!")
 
@@ -329,8 +300,8 @@ async def handle_callback(update, ctx):
                 row = []
         if row:
             keyboard.append(row)
-        await query.edit_message_text(
-            "Pilih kategori:", reply_markup=InlineKeyboardMarkup(keyboard))
+        await query.edit_message_text("Pilih kategori:",
+            reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif query.data.startswith("sc_"):
         cat = query.data.replace("sc_", "")
@@ -345,9 +316,8 @@ async def handle_callback(update, ctx):
                 cl = icon + " " + CATEGORIES.get(cat, "Lainnya")
                 await query.edit_message_text(
                     "Updated!\n================\n"
-                    + format_rupiah(e["amount"]) + "\n"
-                    + e["note"] + "\n" + cl + "\n"
-                    + e["date"] + " " + e.get("time", ""))
+                    + format_rupiah(e["amount"]) + "\n" + e["note"]
+                    + "\n" + cl + "\n" + e["date"])
                 return
         await query.edit_message_text("Data tidak ditemukan.")
 
@@ -366,8 +336,7 @@ async def hapus(update, ctx):
         removed = data.pop(-(index + 1))
         save_data(data)
         await update.message.reply_text(
-            "Dihapus: " + format_rupiah(removed["amount"])
-            + " - " + removed["note"])
+            "Dihapus: " + format_rupiah(removed["amount"]) + " - " + removed["note"])
     except (ValueError, IndexError):
         await update.message.reply_text("Format: /hapus [nomor]")
 
@@ -386,9 +355,8 @@ async def hari_ini(update, ctx):
         lines.append(icon + " " + format_rupiah(e["amount"]) + " - " + e["note"])
     await update.message.reply_text(
         "Hari Ini (" + ts + ")\n================\n\n"
-        + "\n".join(lines)
-        + "\n\n================\nTotal: " + format_rupiah(total)
-        + "\n" + str(len(today_exp)) + " transaksi")
+        + "\n".join(lines) + "\n\n================\nTotal: "
+        + format_rupiah(total) + "\n" + str(len(today_exp)) + " transaksi")
 
 
 async def laporan(update, ctx):
@@ -417,10 +385,9 @@ async def laporan(update, ctx):
             + " " + "{:.0f}".format(pct) + "%\n" + format_rupiah(a))
     await update.message.reply_text(
         "Laporan " + now.strftime("%B %Y") + "\n================\n\n"
-        "Total: " + format_rupiah(total) + "\n"
-        "Transaksi: " + str(count) + "x\n"
-        "Rata-rata/hari: " + format_rupiah(avg) + "\n\n"
-        "Per Kategori:\n\n" + "\n\n".join(cat_lines))
+        "Total: " + format_rupiah(total) + "\nTransaksi: " + str(count)
+        + "x\nRata-rata/hari: " + format_rupiah(avg) + "\n\nPer Kategori:\n\n"
+        + "\n\n".join(cat_lines))
 
 
 async def riwayat(update, ctx):
@@ -437,31 +404,6 @@ async def riwayat(update, ctx):
     await update.message.reply_text(
         "10 Terakhir\n================\n\n"
         + "\n\n".join(lines) + "\n\nHapus: /hapus [nomor]")
-
-
-async def kategori(update, ctx):
-    data = load_data()
-    now = datetime.now()
-    mp = now.strftime("%Y-%m")
-    monthly = [e for e in data if e["date"].startswith(mp)]
-    if not monthly:
-        await update.message.reply_text("Belum ada data bulan ini.")
-        return
-    total = sum(e["amount"] for e in monthly)
-    by_cat = {}
-    for e in monthly:
-        c = e.get("category", "other")
-        by_cat[c] = by_cat.get(c, 0) + e["amount"]
-    lines = []
-    for c, a in sorted(by_cat.items(), key=lambda x: -x[1]):
-        icon = CAT_ICONS.get(c, "")
-        label = CATEGORIES.get(c, "Lainnya")
-        pct = (a / total) * 100 if total > 0 else 0
-        lines.append(icon + " " + label + ": " + format_rupiah(a)
-            + " (" + "{:.0f}".format(pct) + "%)")
-    await update.message.reply_text(
-        "Kategori - " + now.strftime("%B %Y") + "\n================\n\n"
-        + "\n".join(lines) + "\n\nTotal: " + format_rupiah(total))
 
 
 async def export_csv(update, ctx):
@@ -490,80 +432,103 @@ async def handle_photo(update, ctx):
         file = await ctx.bot.get_file(photo.file_id)
         image_bytes = await file.download_as_bytearray()
 
-        ocr_text = ocr_receipt(bytes(image_bytes))
+        img = Image.open(io.BytesIO(bytes(image_bytes)))
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
-        if not ocr_text or len(ocr_text.strip()) < 10:
-            await msg.edit_text(
-                "Tidak bisa membaca nota.\n"
-                "Coba foto ulang lebih jelas, atau ketik manual:\n"
-                "50000 makan siang")
+        caption = update.message.caption or "Baca nota ini dan extract semua data."
+        add_to_conversation(ctx, "user", caption)
+
+        response = ask_claude(get_conversation(ctx), image_data=b64)
+
+        if not response:
+            await msg.edit_text("Gagal membaca nota. Coba lagi atau ketik manual.")
             return
 
-        receipt = parse_receipt(ocr_text)
-        category = detect_category(ocr_text)
+        add_to_conversation(ctx, "assistant", response)
 
-        if receipt["total"] <= 0:
-            await msg.edit_text(
-                "Nota terbaca tapi total tidak ditemukan.\n\n"
-                "Teks:\n" + ocr_text[:400] + "\n\n"
-                "Ketik manual: 50000 makan siang")
-            return
+        receipt = parse_receipt_response(response)
 
-        store = receipt["store"] if receipt["store"] else "Nota"
-        note = store
-        if receipt["items"]:
-            names = [i["name"] for i in receipt["items"][:3]]
-            note = store + " - " + ", ".join(names)
+        if receipt and receipt.get("total", 0) > 0:
+            expense = {
+                "amount": receipt["total"],
+                "note": receipt.get("note", receipt.get("store", "Nota")),
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "time": datetime.now().strftime("%H:%M"),
+                "category": receipt.get("category", "other"),
+                "wallet": receipt.get("payment", "cash"),
+                "source": "ocr",
+                "store": receipt.get("store", ""),
+                "items": receipt.get("items", []),
+            }
 
-        expense = {
-            "amount": receipt["total"], "note": note,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "time": datetime.now().strftime("%H:%M"),
-            "category": category, "wallet": "cash", "source": "ocr",
-        }
+            data = load_data()
+            data.append(expense)
+            save_data(data)
+            ctx.user_data["last_expense_idx"] = len(data) - 1
 
-        data = load_data()
-        data.append(expense)
-        save_data(data)
+            icon = CAT_ICONS.get(expense["category"], "")
+            cl = icon + " " + CATEGORIES.get(expense["category"], "Lainnya")
 
-        icon = CAT_ICONS.get(category, "")
-        cat_label = icon + " " + CATEGORIES.get(category, "Lainnya")
+            result = "Tercatat!\n================\n"
+            if receipt.get("store"):
+                result += "Toko: " + receipt["store"] + "\n"
+            if receipt.get("items"):
+                result += "\nItem:\n"
+                for item in receipt["items"][:8]:
+                    result += ("  " + item.get("name", "")
+                        + " x" + str(item.get("qty", 1))
+                        + " = " + format_rupiah(item.get("price", 0)) + "\n")
+            result += ("\nTotal: " + format_rupiah(receipt["total"]) + "\n"
+                + cl + "\n" + expense["date"] + " " + expense["time"])
 
-        items_text = ""
-        if receipt["items"]:
-            for item in receipt["items"][:6]:
-                items_text += "  " + item["name"] + " = " + format_rupiah(item["price"]) + "\n"
+            friendly = clean_response(response)
+            if friendly:
+                result += "\n\n" + friendly
 
-        result = "Nota terbaca!\n================\n"
-        if store:
-            result += "Toko: " + store + "\n"
-        if items_text:
-            result += "\nItem:\n" + items_text
-        result += ("\nTotal: " + format_rupiah(receipt["total"]) + "\n"
-            + cat_label + " (otomatis)\n"
-            + expense["date"] + " " + expense["time"])
+            result += "\n\nSalah? Tinggal bilang aja, aku perbaiki."
 
-        keyboard = [[InlineKeyboardButton(
-            "Ubah Kategori", callback_data="chg_" + str(len(data) - 1))]]
+            keyboard = [[InlineKeyboardButton(
+                "Ubah Kategori", callback_data="chg_" + str(len(data) - 1))]]
 
-        await msg.edit_text(result, reply_markup=InlineKeyboardMarkup(keyboard))
+            await msg.edit_text(result, reply_markup=InlineKeyboardMarkup(keyboard))
+        else:
+            friendly = clean_response(response)
+            await msg.edit_text(friendly if friendly else "Tidak bisa membaca nota. Coba foto ulang.")
 
     except Exception as e:
         logger.error("Photo error: " + str(e))
-        await msg.edit_text("Error: " + str(e) + "\nKetik manual: 50000 makan siang")
+        await msg.edit_text("Error: " + str(e))
 
 
 async def handle_text(update, ctx):
     text = update.message.text.strip()
     parts = text.split(None, 1)
+
     if not parts:
         return
+
+    # Try parse as number first
     try:
         a = parts[0].replace(".", "").replace(",", "")
-        a = a.replace("k", "000").replace("K", "000").replace("rb", "000").replace("jt", "000000")
+        a = a.replace("k", "000").replace("K", "000")
+        a = a.replace("rb", "000").replace("jt", "000000")
         amount = int(a)
         note = parts[1] if len(parts) > 1 else "Tanpa catatan"
-        category = detect_category(note)
+
+        add_to_conversation(ctx, "user", text)
+        response = ask_claude(get_conversation(ctx))
+
+        category = "other"
+        if response:
+            exp = parse_expense_response(response)
+            if exp and "category" in exp:
+                category = exp["category"]
+            add_to_conversation(ctx, "assistant", response)
+
         expense = {
             "amount": amount, "note": note,
             "date": datetime.now().strftime("%Y-%m-%d"),
@@ -573,19 +538,91 @@ async def handle_text(update, ctx):
         data = load_data()
         data.append(expense)
         save_data(data)
+        ctx.user_data["last_expense_idx"] = len(data) - 1
+
         icon = CAT_ICONS.get(category, "")
         cl = icon + " " + CATEGORIES.get(category, "Lainnya")
+
+        friendly = clean_response(response) if response else ""
+        result = ("Tercatat!\n================\n"
+            + format_rupiah(amount) + "\n" + note + "\n" + cl + "\n"
+            + expense["date"] + " " + expense["time"])
+        if friendly:
+            result += "\n\n" + friendly
+
         keyboard = [[InlineKeyboardButton(
             "Ubah Kategori", callback_data="chg_" + str(len(data) - 1))]]
-        await update.message.reply_text(
-            "Tercatat!\n================\n"
-            + format_rupiah(amount) + "\n" + note + "\n"
-            + cl + " (otomatis)\n"
-            + expense["date"] + " " + expense["time"],
+
+        await update.message.reply_text(result,
             reply_markup=InlineKeyboardMarkup(keyboard))
+        return
+
     except (ValueError, IndexError):
+        pass
+
+    # Not a number - treat as conversation (correction, question, etc.)
+    add_to_conversation(ctx, "user", text)
+
+    # Add context about last expense
+    last_idx = ctx.user_data.get("last_expense_idx")
+    if last_idx is not None:
+        data = load_data()
+        if 0 <= last_idx < len(data):
+            last_exp = data[last_idx]
+            context = ("Data terakhir yang tercatat: "
+                + json.dumps(last_exp, ensure_ascii=False))
+            conv = get_conversation(ctx)
+            if len(conv) >= 2:
+                conv.insert(-1, {"role": "user", "content": context})
+
+    response = ask_claude(get_conversation(ctx))
+
+    if not response:
         await update.message.reply_text(
-            "Kirim foto nota, atau ketik:\n50000 makan siang\n25k kopi\n/laporan")
+            "Maaf, aku ga ngerti. Coba:\n"
+            "- Kirim foto nota\n"
+            "- Ketik: 50000 makan siang\n"
+            "- /laporan")
+        return
+
+    add_to_conversation(ctx, "assistant", response)
+
+    # Check if Claude wants to correct something
+    correction = parse_correction_response(response)
+    if correction and last_idx is not None:
+        data = load_data()
+        if 0 <= last_idx < len(data):
+            field = correction.get("field", "amount")
+            new_val = correction.get("new_value")
+            if field == "amount" and new_val:
+                data[last_idx]["amount"] = int(new_val)
+            elif field == "category" and new_val:
+                data[last_idx]["category"] = new_val
+            elif field == "note" and new_val:
+                data[last_idx]["note"] = new_val
+            save_data(data)
+
+    # Check if Claude found an expense in the text
+    exp_data = parse_expense_response(response)
+    if exp_data and exp_data.get("amount"):
+        expense = {
+            "amount": exp_data["amount"],
+            "note": exp_data.get("note", ""),
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": datetime.now().strftime("%H:%M"),
+            "category": exp_data.get("category", "other"),
+            "wallet": "cash", "source": "telegram",
+        }
+        data = load_data()
+        data.append(expense)
+        save_data(data)
+        ctx.user_data["last_expense_idx"] = len(data) - 1
+
+    friendly = clean_response(response)
+    if friendly:
+        await update.message.reply_text(friendly)
+    else:
+        await update.message.reply_text("Oke, sudah diupdate!")
 
 
 # ════════════════════════════════════════
@@ -652,25 +689,34 @@ def run_web():
 # ════════════════════════════════════════
 
 def main():
+    global claude_client
+
     if not BOT_TOKEN:
-        print("ERROR: BOT_TOKEN belum diset di Railway Variables!")
+        print("ERROR: BOT_TOKEN belum diset!")
         return
 
+    if ANTHROPIC_API_KEY:
+        claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        print("Claude API: AKTIF")
+    else:
+        print("WARNING: ANTHROPIC_API_KEY belum diset! Bot jalan tanpa AI.")
+
     threading.Thread(target=run_web, daemon=True).start()
+
     print("=" * 50)
-    print("DuitTracker AKTIF!")
-    print("OCR: Tesseract (built-in, no API key needed)")
+    print("DuitTracker v4 AKTIF!")
+    print("OCR: Claude Vision (smart)")
     print("Dashboard: port " + str(PORT))
     print("=" * 50)
 
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("reset", reset))
     app.add_handler(CommandHandler("catat", catat))
     app.add_handler(CommandHandler("hapus", hapus))
     app.add_handler(CommandHandler("hari", hari_ini))
     app.add_handler(CommandHandler("laporan", laporan))
     app.add_handler(CommandHandler("riwayat", riwayat))
-    app.add_handler(CommandHandler("kategori", kategori))
     app.add_handler(CommandHandler("export", export_csv))
     app.add_handler(CommandHandler("web", web_link))
     app.add_handler(CallbackQueryHandler(handle_callback))
