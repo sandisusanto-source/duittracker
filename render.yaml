@@ -1,0 +1,20 @@
+# Render Blueprint — CEO Dashboard Cahaya Senja
+# Deploy: https://render.com/deploy?repo=https://github.com/sandisusanto-source/duittracker
+# Membangun aplikasi di subfolder ceo/ sebagai web service gratis.
+services:
+  - type: web
+    name: cahaya-senja-dashboard
+    runtime: python
+    rootDir: ceo
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: SEED_DEMO
+        value: "1"            # muat data contoh saat pertama deploy
+      # Opsional — isi kalau mau Daily Brief versi AI:
+      # - key: ANTHROPIC_API_KEY
+      #   sync: false

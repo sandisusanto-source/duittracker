@@ -183,8 +183,26 @@ def start_scheduler():
         logger.warning("Scheduler tidak aktif: %s", e)
 
 
+def _maybe_seed_demo():
+    """Isi data contoh saat deploy demo (SEED_DEMO=1) jika DB masih kosong."""
+    if os.environ.get("SEED_DEMO") != "1":
+        return
+    try:
+        from db import query_one
+        if query_one("SELECT 1 FROM sales_daily LIMIT 1"):
+            return  # sudah ada data
+        import seed
+        seed.seed()
+        alert_mod.run_alert_engine()
+        alert_mod.generate_brief()
+        logger.info("Data demo dimuat (SEED_DEMO=1).")
+    except Exception as e:
+        logger.warning("Gagal memuat data demo: %s", e)
+
+
 def main():
     init_db()
+    _maybe_seed_demo()
     start_scheduler()
     print("=" * 50)
     print("CEO Dashboard Cahaya Senja AKTIF")

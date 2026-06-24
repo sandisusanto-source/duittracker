@@ -24,6 +24,14 @@ Dibangun di atas stack yang sama dengan DuitTracker: **Python + Flask + SQLite +
 
 ---
 
+## Deploy online (1 klik, gratis)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sandisusanto-source/duittracker)
+
+Klik tombol di atas → login GitHub → **Apply**. Render membaca `render.yaml`, build folder `ceo/`, dan memberi link `https://...onrender.com`. Data contoh otomatis dimuat (`SEED_DEMO=1`).
+
+> Free tier "tidur" setelah ±15 menit idle (buka pertama ±30 detik), dan SQLite-nya ephemeral (reset saat redeploy) — cukup untuk demo. Untuk produksi, pindah DB ke Supabase.
+
 ## Cara menjalankan (lokal)
 
 ```bash
