@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEO Dashboard — Cahaya Senja</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:#0a0e17;color:#e2e8f0;min-height:100vh;-webkit-tap-highlight-color:transparent}
+.container{max-width:760px;margin:0 auto;padding:16px 14px 60px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.header .sub{font-size:11px;color:#64748b;letter-spacing:2px;text-transform:uppercase}
+.header .title{font-size:24px;font-weight:800;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .date{font-size:12px;color:#64748b;margin-top:2px}
+.actions{display:flex;gap:8px}
+.btn{padding:8px 12px;border-radius:10px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn.primary{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;border:none}
+.btn:active{opacity:.7}
+.section-label{font-size:11px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin:22px 4px 10px}
+.card{background:linear-gradient(135deg,#111827,#161f33);border:1px solid #1e293b;border-radius:16px;padding:16px;margin-bottom:12px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.muted{color:#64748b;font-size:12px;font-weight:400}
+
+/* Brief */
+.brief{background:linear-gradient(135deg,#1e1b2e,#252041);border:1px solid #4c1d95;border-radius:16px;padding:18px;margin-bottom:14px}
+.brief .lbl{font-size:11px;color:#a78bfa;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.brief .body{font-size:14px;line-height:1.65;white-space:pre-wrap;color:#e9d5ff}
+
+/* Alerts */
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:12px;margin-bottom:8px;border:1px solid}
+.alert.critical{background:#7f1d1d22;border-color:#dc2626}
+.alert.warning{background:#78350f22;border-color:#d97706}
+.alert.info{background:#1e3a8a22;border-color:#2563eb}
+.alert .ic{font-size:18px}
+.alert .t{font-size:13px;font-weight:700}
+.alert .m{font-size:12px;color:#94a3b8;margin-top:2px;line-height:1.45}
+.alert .x{margin-left:auto;color:#64748b;cursor:pointer;font-size:16px;padding:0 4px}
+
+/* Stat grid */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#0f1626;border:1px solid #1e293b;border-radius:14px;padding:14px}
+.stat .l{font-size:11px;color:#64748b;margin-bottom:5px}
+.stat .v{font-size:19px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.stat .v.sm{font-size:16px}
+.delta{font-size:12px;font-weight:600;margin-top:4px;display:inline-flex;align-items:center;gap:3px}
+.up{color:#22c55e}.down{color:#ef4444}.flat{color:#64748b}
+.progress{height:8px;background:#1e293b;border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+
+/* rows */
+.row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #1e293b}
+.row:last-child{border-bottom:none}
+.row .name{font-size:13px;font-weight:600}
+.row .meta{font-size:11px;color:#64748b;margin-top:2px}
+.row .amt{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-align:right}
+.pill{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px}
+.rank{width:24px;height:24px;border-radius:7px;background:#1e293b;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-right:9px;color:#fbbf24}
+.tag{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:600}
+
+.empty{text-align:center;padding:24px;color:#64748b;font-size:13px}
+.uploadbox{border:2px dashed #334155;border-radius:14px;padding:22px;text-align:center;color:#64748b;font-size:13px;cursor:pointer;transition:.2s}
+.uploadbox.drag{border-color:#fbbf24;background:#fbbf2410;color:#fbbf24}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:12px 18px;border-radius:12px;font-size:13px;z-index:99;opacity:0;transition:.3s;max-width:90%}
+.toast.show{opacity:1}
+.toast.ok{border-color:#22c55e}.toast.err{border-color:#ef4444}
+.scroll-x{overflow-x:auto}
+@media(max-width:480px){.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <div class="sub">CEO Dashboard</div>
+      <div class="title">Cahaya Senja</div>
+      <div class="date" id="dataDate">memuat…</div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="document.getElementById('fileInput').click()">⬆ Upload</button>
+      <button class="btn primary" id="refreshBtn" onclick="refresh()">↻ Refresh</button>
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" multiple style="display:none">
+
+  <!-- H. Daily Brief -->
+  <div class="brief">
+    <div class="lbl">☀️ CEO Brief Pagi Ini</div>
+    <div class="body" id="brief">memuat ringkasan…</div>
+  </div>
+
+  <!-- G. Alert Center -->
+  <div class="section-label">Alert Center</div>
+  <div id="alerts"></div>
+
+  <!-- A. Executive Summary -->
+  <div class="section-label">Executive Summary</div>
+  <div class="stats" id="execStats"></div>
+  <div class="card" id="targetCard" style="margin-top:12px"></div>
+
+  <!-- B. Marketplace Performance -->
+  <div class="section-label">Performa Marketplace (7 hari)</div>
+  <div class="card"><div id="channels"></div></div>
+
+  <!-- C. Produk Terlaris -->
+  <div class="section-label">Top 10 Produk (7 hari)</div>
+  <div class="card"><div id="products"></div></div>
+
+  <!-- D. Advertising -->
+  <div class="section-label">Performa Iklan (7 hari)</div>
+  <div class="card" id="ads"></div>
+
+  <!-- E. Inventory -->
+  <div class="section-label">Inventory Alert</div>
+  <div class="card" id="inventory"></div>
+
+  <!-- F. Cashflow -->
+  <div class="section-label">Cashflow Monitoring</div>
+  <div class="stats" id="cashStats"></div>
+
+  <!-- Upload -->
+  <div class="section-label">Upload Data</div>
+  <div class="card">
+    <div class="uploadbox" id="uploadbox">
+      Tarik file <b>XLSX / CSV</b> ke sini atau klik untuk pilih.<br>
+      <span class="muted">Jenis terdeteksi otomatis: penjualan, iklan, stok, kas, produk, target.</span>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const rp = n => "Rp " + Number(Math.round(n||0)).toLocaleString("id-ID");
+const rpShort = n => {
+  n = Number(n||0);
+  if(Math.abs(n)>=1e9) return "Rp "+(n/1e9).toFixed(1)+" M";
+  if(Math.abs(n)>=1e6) return "Rp "+(n/1e6).toFixed(1)+" jt";
+  if(Math.abs(n)>=1e3) return "Rp "+(n/1e3).toFixed(0)+" rb";
+  return "Rp "+n;
+};
+const el = id => document.getElementById(id);
+
+function deltaHtml(pct){
+  if(pct===null||pct===undefined) return '<span class="delta flat">—</span>';
+  const cls = pct>0?"up":pct<0?"down":"flat";
+  const arr = pct>0?"▲":pct<0?"▼":"▬";
+  return `<span class="delta ${cls}">${arr} ${Math.abs(pct)}%</span>`;
+}
+function toast(msg, type){
+  const t = el("toast"); t.textContent = msg;
+  t.className = "toast show " + (type||"");
+  setTimeout(()=>t.className="toast", 3200);
+}
+
+async function load(){
+  try{
+    const r = await fetch("/api/overview");
+    const d = await r.json();
+    renderBrief(d.brief);
+    renderAlerts(d.alerts);
+    renderExec(d.executive);
+    renderChannels(d.channels);
+    renderProducts(d.products);
+    renderAds(d.advertising);
+    renderInventory(d.inventory);
+    renderCash(d.cashflow);
+    el("dataDate").textContent = "Data per " + (d.executive.data_date||"-");
+  }catch(e){ console.error(e); toast("Gagal memuat data","err"); }
+}
+
+function renderBrief(b){ el("brief").textContent = (b&&b.body)||"Belum ada brief."; }
+
+function renderAlerts(alerts){
+  const c = el("alerts");
+  if(!alerts||!alerts.length){ c.innerHTML='<div class="card empty">✅ Tidak ada anomali. Semua aman.</div>'; return; }
+  const ic = {critical:"🔴",warning:"🟠",info:"🔵"};
+  c.innerHTML = alerts.map(a=>`
+    <div class="alert ${a.severity}">
+      <div class="ic">${ic[a.severity]||"•"}</div>
+      <div style="flex:1"><div class="t">${a.title}</div><div class="m">${a.message}</div></div>
+      <div class="x" onclick="dismiss(${a.id})">✕</div>
+    </div>`).join("");
+}
+async function dismiss(id){ await fetch(`/api/alerts/${id}/read`,{method:"POST"}); load(); }
+
+function renderExec(e){
+  el("execStats").innerHTML = `
+    <div class="stat"><div class="l">Omset Hari Ini</div><div class="v">${rpShort(e.omset_today)}</div>${deltaHtml(e.omset_today_vs_yest_pct)} <span class="muted">vs kemarin</span></div>
+    <div class="stat"><div class="l">Omset Kemarin</div><div class="v">${rpShort(e.omset_yesterday)}</div></div>
+    <div class="stat"><div class="l">Omset Bulan Ini</div><div class="v">${rpShort(e.omset_mtd)}</div></div>
+    <div class="stat"><div class="l">Estimasi Laba Bulan Ini</div><div class="v sm" style="color:${e.est_profit_mtd>=0?'#22c55e':'#ef4444'}">${rpShort(e.est_profit_mtd)}</div><span class="muted">margin ${e.margin_pct}%</span></div>`;
+
+  const ach = e.achievement_pct;
+  el("targetCard").innerHTML = `
+    <div class="card-title">Target Bulan Ini <span class="muted">${e.target_month?rp(e.target_month):'belum diset'}</span></div>
+    ${e.target_month? `
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span>${rp(e.omset_mtd)}</span><span style="font-weight:700">${ach}%</span></div>
+      <div class="progress"><div class="progress-fill" style="width:${Math.min(ach||0,100)}%"></div></div>
+      <div class="muted" style="margin-top:8px">Proyeksi akhir bulan: <b style="color:#e2e8f0">${rp(e.projected_month)}</b> (${e.projected_vs_target_pct}% target)</div>
+    ` : `<button class="btn primary" onclick="setTarget()">+ Set Target Bulan Ini</button>`}`;
+}
+
+async function setTarget(){
+  const v = prompt("Target omset bulan ini (Rp):");
+  if(!v) return;
+  const month = new Date().toISOString().slice(0,7);
+  await fetch("/api/targets",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({month, revenue_target: Number(v.replace(/\D/g,""))})});
+  toast("Target tersimpan","ok"); load();
+}
+
+function renderChannels(d){
+  const c = el("channels"); const list = d.channels||[];
+  if(!list.length){ c.innerHTML='<div class="empty">Belum ada data penjualan.</div>'; return; }
+  c.innerHTML = list.map(ch=>`
+    <div class="row">
+      <div><div class="name">${ch.channel}</div>
+        <div class="meta">${ch.orders_7d} order · AOV ${rpShort(ch.aov)}</div></div>
+      <div><div class="amt">${rpShort(ch.revenue_7d)}</div>
+        <div style="text-align:right">${deltaHtml(ch.growth_pct)}</div></div>
+    </div>`).join("");
+}
+
+function renderProducts(d){
+  const c = el("products"); const list = d.products||[];
+  if(!list.length){ c.innerHTML='<div class="empty">Belum ada data produk (upload penjualan per-SKU).</div>'; return; }
+  c.innerHTML = list.map(p=>{
+    let rc = '';
+    if(p.is_new) rc = '<span class="pill" style="background:#2563eb33;color:#60a5fa">BARU</span>';
+    else if(p.rank_change>0) rc = `<span class="pill" style="background:#16653433;color:#22c55e">▲${p.rank_change}</span>`;
+    else if(p.rank_change<0) rc = `<span class="pill" style="background:#7f1d1d33;color:#ef4444">▼${Math.abs(p.rank_change)}</span>`;
+    const margin = p.margin_pct!==null?`margin ${p.margin_pct}%`:'margin -';
+    return `<div class="row">
+      <div style="display:flex;align-items:center"><span class="rank">${p.rank}</span>
+        <div><div class="name">${p.name}${rc}</div>
+          <div class="meta">${p.qty} terjual · ${margin}</div></div></div>
+      <div class="amt">${rpShort(p.revenue)}</div></div>`;
+  }).join("");
+}
+
+function renderAds(d){
+  const roas = d.roas!==null?d.roas:"-";
+  const best = d.best_channel? `${d.best_channel.channel} (ROAS ${d.best_channel.roas})` : "-";
+  const worst = d.worst_channel? `${d.worst_channel.channel} (ROAS ${d.worst_channel.roas})` : "-";
+  el("ads").innerHTML = `
+    <div class="stats" style="margin-bottom:6px">
+      <div class="stat"><div class="l">Total Biaya Iklan</div><div class="v sm">${rpShort(d.total_cost)}</div></div>
+      <div class="stat"><div class="l">ROAS</div><div class="v">${roas}</div></div>
+      <div class="stat"><div class="l">ACOS</div><div class="v sm">${d.acos!==null?d.acos+'%':'-'}</div></div>
+      <div class="stat"><div class="l">TACOS</div><div class="v sm">${d.tacos!==null?d.tacos+'%':'-'}</div></div>
+    </div>
+    <div class="row"><div class="name">🏆 Terbaik</div><div class="amt" style="color:#22c55e">${best}</div></div>
+    <div class="row"><div class="name">⚠️ Terburuk</div><div class="amt" style="color:#ef4444">${worst}</div></div>`;
+}
+
+function renderInventory(d){
+  const low = d.low_stock||[], dead = d.dead_stock||[];
+  let h = '';
+  if(low.length){
+    h += '<div class="card-title">Hampir Habis</div>';
+    h += low.map(s=>`<div class="row"><div><div class="name">${s.name}</div>
+      <div class="meta">sisa ${s.stock_qty} unit</div></div>
+      <div class="tag" style="background:${s.days_left<=3?'#7f1d1d':'#78350f'};color:#fca5a5">${s.days_left} hari lagi</div></div>`).join("");
+  }
+  if(dead.length){
+    h += '<div class="card-title" style="margin-top:14px">Tidak Bergerak >30 Hari</div>';
+    h += dead.map(s=>`<div class="row"><div class="name">${s.name}</div>
+      <div class="amt muted">${s.stock_qty} unit nganggur</div></div>`).join("");
+  }
+  if(!h) h = '<div class="empty">Belum ada data stok, atau semua aman.</div>';
+  el("inventory").innerHTML = h;
+}
+
+function renderCash(d){
+  el("cashStats").innerHTML = `
+    <div class="stat"><div class="l">Saldo Kas</div><div class="v" style="color:${d.balance>=0?'#22c55e':'#ef4444'}">${rpShort(d.balance)}</div></div>
+    <div class="stat"><div class="l">Hutang Supplier</div><div class="v sm" style="color:#ef4444">${rpShort(d.accounts_payable)}</div></div>
+    <div class="stat"><div class="l">Piutang</div><div class="v sm" style="color:#22c55e">${rpShort(d.accounts_receivable)}</div></div>
+    <div class="stat"><div class="l">Pengeluaran Minggu Ini</div><div class="v sm">${rpShort(d.week_expenses)}</div></div>
+    <div class="stat" style="grid-column:1/-1"><div class="l">Prediksi Kas 30 Hari</div>
+      <div class="v" style="color:${d.projected_negative?'#ef4444':'#22c55e'}">${rp(d.projected_cash_30d)}</div>
+      ${d.projected_negative?'<span class="delta down">⚠ butuh perhatian</span>':'<span class="delta up">aman</span>'}</div>`;
+}
+
+async function refresh(){
+  const b = el("refreshBtn"); b.textContent="↻ …"; b.disabled=true;
+  try{ await fetch("/api/refresh",{method:"POST"}); await load(); toast("Diperbarui","ok"); }
+  catch(e){ toast("Gagal refresh","err"); }
+  b.textContent="↻ Refresh"; b.disabled=false;
+}
+
+async function upload(files){
+  if(!files||!files.length) return;
+  const fd = new FormData();
+  for(const f of files) fd.append("file", f);
+  toast("Mengunggah "+files.length+" file…");
+  try{
+    const r = await fetch("/api/upload",{method:"POST",body:fd});
+    const d = await r.json();
+    const ok = d.results.filter(x=>x.ok);
+    const types = ok.map(x=>`${x.type} (${x.rows_imported})`).join(", ");
+    if(ok.length) toast("Terimport: "+types,"ok");
+    else toast("Gagal: "+(d.results[0]&&d.results[0].error||"format tak dikenal"),"err");
+    load();
+  }catch(e){ toast("Upload gagal","err"); }
+}
+
+el("fileInput").addEventListener("change", e=>upload(e.target.files));
+const ub = el("uploadbox");
+ub.addEventListener("click",()=>el("fileInput").click());
+["dragover","dragenter"].forEach(ev=>ub.addEventListener(ev,e=>{e.preventDefault();ub.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>ub.addEventListener(ev,e=>{e.preventDefault();ub.classList.remove("drag");}));
+ub.addEventListener("drop",e=>upload(e.dataTransfer.files));
+
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+ceo.db
+*.db
+__pycache__/
+*.pyc
