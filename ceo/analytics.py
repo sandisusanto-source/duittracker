@@ -122,6 +122,7 @@ def _days_in_month(date_str):
 # ──────────────────────────────────────────────────────────────
 def channels():
     today = _latest_data_date()
+    month_start = _month_of(today) + "-01"
     week_from = _shift(today, -6)
     prev_week_from = _shift(today, -13)
     prev_week_to = _shift(today, -7)
@@ -130,24 +131,28 @@ def channels():
     chans = query("SELECT name FROM channels WHERE is_active=1 ORDER BY name")
     for c in chans:
         name = c["name"]
-        rev_week = _sum_revenue(week_from, today, name)
-        rev_prev = _sum_revenue(prev_week_from, prev_week_to, name)
-        row = query_one(
+        # total bulan berjalan (MTD)
+        m = query_one(
             """SELECT COALESCE(SUM(order_count),0) oc, COALESCE(SUM(revenue),0) rv
                FROM sales_daily WHERE date BETWEEN ? AND ? AND channel=?""",
-            (week_from, today, name),
+            (month_start, today, name),
         )
-        orders = row["oc"]
-        aov = round(row["rv"] / orders) if orders else 0
+        orders = m["oc"]
+        rev_mtd = m["rv"]
+        aov = round(rev_mtd / orders) if orders else 0
+        # pertumbuhan: minggu ini vs minggu lalu (WoW)
+        rev_week = _sum_revenue(week_from, today, name)
+        rev_prev = _sum_revenue(prev_week_from, prev_week_to, name)
         out.append({
             "channel": name,
+            "revenue": rev_mtd,
             "revenue_7d": rev_week,
-            "orders_7d": orders,
+            "orders": orders,
             "aov": aov,
             "growth_pct": pct_change(rev_week, rev_prev),
         })
-    out.sort(key=lambda x: x["revenue_7d"], reverse=True)
-    return {"period": "7 hari terakhir", "channels": out}
+    out.sort(key=lambda x: x["revenue"], reverse=True)
+    return {"period": "Bulan berjalan", "channels": out}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -155,30 +160,32 @@ def channels():
 # ──────────────────────────────────────────────────────────────
 def top_products(limit=10):
     today = _latest_data_date()
+    month_start = _month_of(today) + "-01"
     week_from = _shift(today, -6)
     prev_from = _shift(today, -13)
     prev_to = _shift(today, -7)
 
     def ranked(d_from, d_to):
-        rows = query(
-            """SELECT s.sku, COALESCE(p.name, s.sku) name, p.cost_price,
+        return query(
+            """SELECT s.sku, COALESCE(p.name, s.sku) name, p.category, p.cost_price,
                       SUM(s.qty) qty, SUM(s.revenue) revenue
                FROM sales_daily s LEFT JOIN products p ON s.sku = p.sku
                WHERE s.date BETWEEN ? AND ? AND s.sku IS NOT NULL
                GROUP BY s.sku ORDER BY revenue DESC""",
             (d_from, d_to),
         )
-        return rows
 
-    current = ranked(week_from, today)
-    prev = ranked(prev_from, prev_to)
-    prev_rank = {r["sku"]: i + 1 for i, r in enumerate(prev)}
+    # ranking ditampilkan berdasar bulan berjalan; perubahan rank pakai momentum mingguan
+    mtd = ranked(month_start, today)
+    cur7 = {r["sku"]: i + 1 for i, r in enumerate(ranked(week_from, today))}
+    prev7 = {r["sku"]: i + 1 for i, r in enumerate(ranked(prev_from, prev_to))}
 
     out = []
-    for i, r in enumerate(current[:limit]):
+    for i, r in enumerate(mtd[:limit]):
         rank = i + 1
-        old = prev_rank.get(r["sku"])
-        rank_change = (old - rank) if old else None  # positif = naik peringkat
+        cr = cur7.get(r["sku"])
+        pr = prev7.get(r["sku"])
+        rank_change = (pr - cr) if (cr and pr) else None  # positif = naik peringkat
         margin = None
         if r["cost_price"]:
             margin = round((r["revenue"] - r["qty"] * r["cost_price"]) / r["revenue"] * 100, 1) if r["revenue"] else 0
@@ -186,13 +193,14 @@ def top_products(limit=10):
             "rank": rank,
             "sku": r["sku"],
             "name": r["name"],
+            "category": r["category"] or "-",
             "revenue": r["revenue"],
             "qty": r["qty"],
             "margin_pct": margin,
             "rank_change": rank_change,
-            "is_new": old is None,
+            "is_new": r["sku"] not in prev7,
         })
-    return {"period": "7 hari terakhir", "products": out}
+    return {"period": "Bulan berjalan", "products": out}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -319,6 +327,12 @@ def cashflow():
         "SELECT COALESCE(SUM(amount),0) v FROM cash_ledger WHERE type='out' AND date BETWEEN ? AND ?",
         (week_from, today),
     )["v"]
+    breakdown = query(
+        """SELECT COALESCE(category,'Lainnya') label, COALESCE(SUM(amount),0) amount
+           FROM cash_ledger WHERE type='out' AND date BETWEEN ? AND ?
+           GROUP BY category ORDER BY amount DESC""",
+        (week_from, today),
+    )
 
     # prediksi kas 30 hari: saldo + piutang masuk - hutang jatuh tempo - run-rate pengeluaran
     avg_daily_out = week_out / 7.0
@@ -334,6 +348,7 @@ def cashflow():
         "accounts_payable": round(ap),
         "accounts_receivable": round(ar),
         "week_expenses": round(week_out),
+        "breakdown": breakdown,
         "projected_cash_30d": projected_cash_30,
         "projected_negative": projected_cash_30 < 0,
     }

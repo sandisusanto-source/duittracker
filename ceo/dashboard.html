@@ -1,319 +1,559 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CEO Dashboard — Cahaya Senja</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cahaya Senja · CEO Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+:root{
+  --bg:#F6EFE2; --navy:#101a33; --navy2:#1b2c52;
+  --ink:#1a1205; --heading:#101a33; --muted:#8a7a5a; --slate:#3a4860;
+  --gold:#E0930A; --gold-l:#FFB11D; --gold-lbl:#b5740a; --orange:#FD6212;
+  --red:#C80807; --green:#1f9d4d;
+  --card:#fff; --border:#ECE3D2; --soft:#fff6e3; --soft2:#ffe9c9;
+  --nav:#fbf6ec; --line:#f4ecdc;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Outfit',sans-serif;background:#0a0e17;color:#e2e8f0;min-height:100vh;-webkit-tap-highlight-color:transparent}
-.container{max-width:760px;margin:0 auto;padding:16px 14px 60px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
-.header .sub{font-size:11px;color:#64748b;letter-spacing:2px;text-transform:uppercase}
-.header .title{font-size:24px;font-weight:800;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header .date{font-size:12px;color:#64748b;margin-top:2px}
-.actions{display:flex;gap:8px}
-.btn{padding:8px 12px;border-radius:10px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
-.btn.primary{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;border:none}
-.btn:active{opacity:.7}
-.section-label{font-size:11px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin:22px 4px 10px}
-.card{background:linear-gradient(135deg,#111827,#161f33);border:1px solid #1e293b;border-radius:16px;padding:16px;margin-bottom:12px}
-.card-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.muted{color:#64748b;font-size:12px;font-weight:400}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  -webkit-font-smoothing:antialiased;padding-bottom:48px;min-height:100vh}
+.fd{font-family:'Fredoka','Plus Jakarta Sans',sans-serif}
+.wrap{max-width:1180px;margin:0 auto}
+.scroll::-webkit-scrollbar{height:6px;width:6px}
+.scroll::-webkit-scrollbar-thumb{background:#d9c8a8;border-radius:99px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+section{animation:rise .4s ease both}
 
-/* Brief */
-.brief{background:linear-gradient(135deg,#1e1b2e,#252041);border:1px solid #4c1d95;border-radius:16px;padding:18px;margin-bottom:14px}
-.brief .lbl{font-size:11px;color:#a78bfa;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.brief .body{font-size:14px;line-height:1.65;white-space:pre-wrap;color:#e9d5ff}
+/* header */
+header{background:linear-gradient(120deg,#101a33 0%,#1b2c52 52%,#5a3a17 130%);color:#fff;
+  padding:18px clamp(16px,4vw,40px) 20px;position:relative;overflow:hidden}
+header .glow{position:absolute;top:-60px;right:-30px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,#FFB11D55,transparent 68%);pointer-events:none}
+.hrow{display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between;position:relative}
+.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#FFB11D,#FD6212);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(253,98,18,.4);flex:none}
+.logo span{font-weight:700;font-size:22px;color:#101a33}
+.brandname{font-weight:600;font-size:21px;letter-spacing:-.01em;line-height:1;white-space:nowrap}
+.brandsub{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:#FFD27A;font-weight:600;margin-top:3px}
+.greet{font-size:13.5px;font-weight:700;white-space:nowrap}
+.greetsub{font-size:11.5px;color:#b8c2d6}
+.toggle{display:flex;background:rgba(255,255,255,.1);border-radius:999px;padding:3px;gap:2px}
+.toggle button{border:none;font-size:12.5px;padding:7px 15px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600;background:transparent;color:#c9d3e6}
+.toggle button.on{background:#fff;color:#101a33;font-weight:700}
 
-/* Alerts */
-.alert{display:flex;gap:10px;padding:12px 14px;border-radius:12px;margin-bottom:8px;border:1px solid}
-.alert.critical{background:#7f1d1d22;border-color:#dc2626}
-.alert.warning{background:#78350f22;border-color:#d97706}
-.alert.info{background:#1e3a8a22;border-color:#2563eb}
-.alert .ic{font-size:18px}
-.alert .t{font-size:13px;font-weight:700}
-.alert .m{font-size:12px;color:#94a3b8;margin-top:2px;line-height:1.45}
-.alert .x{margin-left:auto;color:#64748b;cursor:pointer;font-size:16px;padding:0 4px}
+/* cockpit strip */
+.cockpit{background:#101a33;padding:0 clamp(16px,4vw,40px) 16px}
+.cockpit .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi-dark{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 14px}
+.kpi-dark .l{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#9fb0cc;font-weight:600}
+.kpi-dark .v{font-size:20px;font-weight:800;color:#fff;margin-top:4px;letter-spacing:-.02em}
+.kpi-dark .s{font-size:11px;color:#c9d3e6;margin-top:2px}
 
-/* Stat grid */
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat{background:#0f1626;border:1px solid #1e293b;border-radius:14px;padding:14px}
-.stat .l{font-size:11px;color:#64748b;margin-bottom:5px}
-.stat .v{font-size:19px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.stat .v.sm{font-size:16px}
-.delta{font-size:12px;font-weight:600;margin-top:4px;display:inline-flex;align-items:center;gap:3px}
-.up{color:#22c55e}.down{color:#ef4444}.flat{color:#64748b}
-.progress{height:8px;background:#1e293b;border-radius:4px;overflow:hidden;margin-top:8px}
-.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+/* nav */
+nav{background:var(--nav);border-bottom:1px solid #e7dcc4;position:sticky;top:0;z-index:20;box-shadow:0 4px 14px rgba(80,55,15,.05)}
+nav .inner{display:flex;gap:6px;overflow-x:auto;padding:9px clamp(12px,4vw,40px)}
+nav button{border:none;font-size:13.5px;padding:9px 16px;border-radius:999px;cursor:pointer;font-family:inherit;
+  font-weight:600;background:transparent;color:#7a6a48;white-space:nowrap;flex:none}
+nav button.on{background:var(--gold);color:#fff;font-weight:700;box-shadow:0 6px 14px rgba(224,147,10,.28)}
 
-/* rows */
-.row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #1e293b}
-.row:last-child{border-bottom:none}
-.row .name{font-size:13px;font-weight:600}
-.row .meta{font-size:11px;color:#64748b;margin-top:2px}
-.row .amt{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-align:right}
-.pill{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px}
-.rank{width:24px;height:24px;border-radius:7px;background:#1e293b;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-right:9px;color:#fbbf24}
-.tag{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:600}
+main{padding:clamp(16px,3.5vw,30px) clamp(14px,4vw,40px)}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-lbl);font-weight:700}
+h2.sec{font-size:24px;font-weight:800;margin:4px 0 0;color:var(--heading);letter-spacing:-.02em}
+.sec-head{margin-bottom:16px}
+.gridfit{display:grid;gap:14px}
 
-.empty{text-align:center;padding:24px;color:#64748b;font-size:13px}
-.uploadbox{border:2px dashed #334155;border-radius:14px;padding:22px;text-align:center;color:#64748b;font-size:13px;cursor:pointer;transition:.2s}
-.uploadbox.drag{border-color:#fbbf24;background:#fbbf2410;color:#fbbf24}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:12px 18px;border-radius:12px;font-size:13px;z-index:99;opacity:0;transition:.3s;max-width:90%}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 26px rgba(60,40,10,.06)}
+.card-accent{background:var(--soft);border:1px solid #f3dca8;border-radius:18px;padding:18px;box-shadow:0 10px 26px rgba(220,150,30,.1)}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:26px;font-weight:800;margin:6px 0 2px;letter-spacing:-.02em}
+.kpi .row{display:flex;align-items:center;gap:8px}
+.kpi .s{font-size:12px;color:var(--muted)}
+.delta{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.d-up{color:var(--green);background:#E8F7EC}
+.d-down{color:var(--red);background:#FDEBEA}
+.d-flat{color:var(--muted);background:#f0e7d4}
+
+/* brief */
+.brief-hero{background:linear-gradient(135deg,#fff6e3 0%,#ffe9c9 60%,#ffdca6 100%);border:1px solid #f3dca8;
+  border-radius:24px;padding:clamp(20px,3vw,32px);box-shadow:0 16px 40px rgba(220,150,30,.14);position:relative;overflow:hidden}
+.brief-hero .glow{position:absolute;top:-50px;right:-20px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,#FFB11D88,transparent 70%)}
+.pill-dark{display:inline-flex;align-items:center;gap:8px;background:#101a33;color:#FFD27A;font-size:11.5px;
+  font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:6px 13px;border-radius:999px}
+.brief-hero h1{font-weight:600;font-size:clamp(24px,4vw,34px);margin:14px 0 4px;color:#1a1205;letter-spacing:-.01em;line-height:1.12}
+.brief-body{font-size:clamp(15px,1.9vw,17px);line-height:1.7;color:#2a2113;margin:16px 0 0;max-width:780px;white-space:pre-wrap}
+.prio{background:#fff;border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:16px;padding:16px 18px;
+  display:flex;align-items:center;gap:15px;box-shadow:0 8px 22px rgba(60,40,10,.06)}
+.prio .num{width:34px;height:34px;border-radius:50%;background:#101a33;color:#FFD27A;font-weight:800;font-size:15px;
+  display:flex;align-items:center;justify-content:center;flex:none}
+.prio .t{font-size:15px;font-weight:700;color:#1a1205;line-height:1.35}
+.prio .w{font-size:12px;color:var(--muted);margin-top:2px}
+.prio .cta{background:#fdf2da;color:#9a6a0a;border:1px solid #f0d9a4;font-weight:700;font-size:12.5px;padding:8px 14px;
+  border-radius:999px;cursor:pointer;white-space:nowrap;flex:none;font-family:inherit}
+.note-dark{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#101a33;border-radius:16px;padding:14px 18px;color:#c9d3e6;font-size:13.5px}
+
+/* tables */
+.tbl{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 26px rgba(60,40,10,.06);overflow:hidden}
+.tbl .th,.tbl .tr{display:grid;gap:10px;padding:13px 18px;align-items:center}
+.tbl .th{background:var(--nav);border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);font-weight:700}
+.tbl .tr{border-bottom:1px solid var(--line);font-size:14px}
+.tbl .tr:last-child{border-bottom:none}
+.chip{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px}
+
+.alert{border-radius:15px;padding:15px 18px;display:flex;gap:14px;align-items:flex-start}
+.alert .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none}
+.alert .t{font-weight:800;font-size:14.5px;color:#1a1205}
+.alert .m{font-size:13px;color:#5a5240;margin-top:3px;line-height:1.45}
+.tag{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+
+.empty{color:var(--muted);font-size:13px;padding:18px;text-align:center}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#101a33;color:#fff;
+  padding:12px 18px;border-radius:12px;font-size:13px;z-index:99;opacity:0;transition:.3s;max-width:90%}
 .toast.show{opacity:1}
-.toast.ok{border-color:#22c55e}.toast.err{border-color:#ef4444}
-.scroll-x{overflow-x:auto}
-@media(max-width:480px){.stats{grid-template-columns:1fr 1fr}}
+.upload{border:2px dashed #d9c8a8;border-radius:16px;padding:22px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}
+.upload.drag{border-color:var(--gold);background:#fff6e3;color:var(--gold-lbl)}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:999px;cursor:pointer;font-family:inherit}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <div>
-      <div class="sub">CEO Dashboard</div>
-      <div class="title">Cahaya Senja</div>
-      <div class="date" id="dataDate">memuat…</div>
+
+<header>
+  <div class="glow"></div>
+  <div class="wrap hrow">
+    <div style="display:flex;align-items:center;gap:13px;flex:none">
+      <div class="logo"><span class="fd">C</span></div>
+      <div>
+        <div class="fd brandname">Cahaya Senja</div>
+        <div class="brandsub">CEO Dashboard</div>
+      </div>
     </div>
-    <div class="actions">
-      <button class="btn" onclick="document.getElementById('fileInput').click()">⬆ Upload</button>
-      <button class="btn primary" id="refreshBtn" onclick="refresh()">↻ Refresh</button>
-    </div>
-  </div>
-  <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" multiple style="display:none">
-
-  <!-- H. Daily Brief -->
-  <div class="brief">
-    <div class="lbl">☀️ CEO Brief Pagi Ini</div>
-    <div class="body" id="brief">memuat ringkasan…</div>
-  </div>
-
-  <!-- G. Alert Center -->
-  <div class="section-label">Alert Center</div>
-  <div id="alerts"></div>
-
-  <!-- A. Executive Summary -->
-  <div class="section-label">Executive Summary</div>
-  <div class="stats" id="execStats"></div>
-  <div class="card" id="targetCard" style="margin-top:12px"></div>
-
-  <!-- B. Marketplace Performance -->
-  <div class="section-label">Performa Marketplace (7 hari)</div>
-  <div class="card"><div id="channels"></div></div>
-
-  <!-- C. Produk Terlaris -->
-  <div class="section-label">Top 10 Produk (7 hari)</div>
-  <div class="card"><div id="products"></div></div>
-
-  <!-- D. Advertising -->
-  <div class="section-label">Performa Iklan (7 hari)</div>
-  <div class="card" id="ads"></div>
-
-  <!-- E. Inventory -->
-  <div class="section-label">Inventory Alert</div>
-  <div class="card" id="inventory"></div>
-
-  <!-- F. Cashflow -->
-  <div class="section-label">Cashflow Monitoring</div>
-  <div class="stats" id="cashStats"></div>
-
-  <!-- Upload -->
-  <div class="section-label">Upload Data</div>
-  <div class="card">
-    <div class="uploadbox" id="uploadbox">
-      Tarik file <b>XLSX / CSV</b> ke sini atau klik untuk pilih.<br>
-      <span class="muted">Jenis terdeteksi otomatis: penjualan, iklan, stok, kas, produk, target.</span>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="text-align:right;line-height:1.3">
+        <div class="greet" id="greeting">Selamat datang</div>
+        <div class="greetsub" id="dateLong">—</div>
+      </div>
+      <div class="toggle">
+        <button id="tgBrief" onclick="setLayout('brief')">Brief-first</button>
+        <button id="tgCockpit" onclick="setLayout('cockpit')">Cockpit</button>
+      </div>
+      <button class="btn-ghost" onclick="document.getElementById('file').click()">⬆ Upload</button>
+      <button class="btn-ghost" id="refreshBtn" onclick="refresh()">↻</button>
     </div>
   </div>
-</div>
+</header>
+<input type="file" id="file" accept=".csv,.xlsx,.xls" multiple style="display:none">
+
+<div class="cockpit" id="cockpit" style="display:none"><div class="wrap grid scroll" id="cockpitGrid"></div></div>
+
+<nav><div class="wrap inner scroll" id="nav"></div></nav>
+
+<main class="wrap" id="main"><div class="empty">Memuat dashboard…</div></main>
+
 <div class="toast" id="toast"></div>
 
 <script>
-const rp = n => "Rp " + Number(Math.round(n||0)).toLocaleString("id-ID");
-const rpShort = n => {
-  n = Number(n||0);
-  if(Math.abs(n)>=1e9) return "Rp "+(n/1e9).toFixed(1)+" M";
-  if(Math.abs(n)>=1e6) return "Rp "+(n/1e6).toFixed(1)+" jt";
-  if(Math.abs(n)>=1e3) return "Rp "+(n/1e3).toFixed(0)+" rb";
-  return "Rp "+n;
-};
-const el = id => document.getElementById(id);
-
-function deltaHtml(pct){
-  if(pct===null||pct===undefined) return '<span class="delta flat">—</span>';
-  const cls = pct>0?"up":pct<0?"down":"flat";
-  const arr = pct>0?"▲":pct<0?"▼":"▬";
-  return `<span class="delta ${cls}">${arr} ${Math.abs(pct)}%</span>`;
+// ───────── helpers ─────────
+const $ = id => document.getElementById(id);
+function rp(n){ return 'Rp ' + Math.round(Number(n)||0).toLocaleString('id-ID'); }
+function rpJt(n){
+  n = Number(n)||0; const a = Math.abs(n);
+  if(a>=1e9) return 'Rp ' + (n/1e9).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' M';
+  if(a>=1e6) return 'Rp ' + (n/1e6).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' jt';
+  if(a>=1e3) return 'Rp ' + Math.round(n/1e3) + ' rb';
+  return 'Rp ' + Math.round(n);
 }
-function toast(msg, type){
-  const t = el("toast"); t.textContent = msg;
-  t.className = "toast show " + (type||"");
-  setTimeout(()=>t.className="toast", 3200);
+function pctTxt(p){ return Math.abs(p).toString().replace('.', ','); }
+function deltaChip(pct, goodUp=true){
+  if(pct===null||pct===undefined) return '<span class="delta d-flat">–</span>';
+  const good = pct===0 ? null : (goodUp ? pct>0 : pct<0);
+  const cls = pct===0 ? 'd-flat' : (good ? 'd-up' : 'd-down');
+  const arr = pct>0 ? '▲' : (pct<0 ? '▼' : '–');
+  return `<span class="delta ${cls}">${arr} ${pctTxt(pct)}%</span>`;
 }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.className='toast show'; setTimeout(()=>t.className='toast',3000); }
 
+const CH_COLORS = {'Shopee':'#EE4D2D','Tokopedia':'#42B549','TikTok Shop':'#111111','Lazada':'#0F146D'};
+const CH_INITIAL = {'Shopee':'S','Tokopedia':'T','TikTok Shop':'TT','Lazada':'L'};
+
+const NAV = [
+  ['brief','Daily Brief'],['exec','Ringkasan'],['market','Marketplace'],['product','Produk'],
+  ['ads','Iklan'],['inv','Inventory'],['cash','Cashflow'],['alert','Alert'],['blueprint','Blueprint'],
+];
+
+let DATA = null;
+let layout = 'brief';
+let tab = 'brief';
+
+// ───────── load ─────────
 async function load(){
   try{
-    const r = await fetch("/api/overview");
-    const d = await r.json();
-    renderBrief(d.brief);
-    renderAlerts(d.alerts);
-    renderExec(d.executive);
-    renderChannels(d.channels);
-    renderProducts(d.products);
-    renderAds(d.advertising);
-    renderInventory(d.inventory);
-    renderCash(d.cashflow);
-    el("dataDate").textContent = "Data per " + (d.executive.data_date||"-");
-  }catch(e){ console.error(e); toast("Gagal memuat data","err"); }
+    const r = await fetch('/api/overview');
+    DATA = await r.json();
+    const e = DATA.executive || {};
+    $('greeting').textContent = 'Selamat pagi, Owner Cahaya Senja';
+    $('dateLong').textContent = 'Data per ' + (e.data_date || '-');
+    renderNav(); renderCockpit(); render();
+  }catch(err){ console.error(err); $('main').innerHTML = '<div class="empty">Gagal memuat data. Coba Refresh.</div>'; }
 }
 
-function renderBrief(b){ el("brief").textContent = (b&&b.body)||"Belum ada brief."; }
+function setLayout(l){ layout = l; $('tgBrief').className = l==='brief'?'on':''; $('tgCockpit').className = l==='cockpit'?'on':''; renderCockpit(); }
+function setTab(t){ tab = t; renderNav(); render(); window.scrollTo({top:0,behavior:'smooth'}); }
 
-function renderAlerts(alerts){
-  const c = el("alerts");
-  if(!alerts||!alerts.length){ c.innerHTML='<div class="card empty">✅ Tidak ada anomali. Semua aman.</div>'; return; }
-  const ic = {critical:"🔴",warning:"🟠",info:"🔵"};
-  c.innerHTML = alerts.map(a=>`
-    <div class="alert ${a.severity}">
-      <div class="ic">${ic[a.severity]||"•"}</div>
-      <div style="flex:1"><div class="t">${a.title}</div><div class="m">${a.message}</div></div>
-      <div class="x" onclick="dismiss(${a.id})">✕</div>
-    </div>`).join("");
-}
-async function dismiss(id){ await fetch(`/api/alerts/${id}/read`,{method:"POST"}); load(); }
-
-function renderExec(e){
-  el("execStats").innerHTML = `
-    <div class="stat"><div class="l">Omset Hari Ini</div><div class="v">${rpShort(e.omset_today)}</div>${deltaHtml(e.omset_today_vs_yest_pct)} <span class="muted">vs kemarin</span></div>
-    <div class="stat"><div class="l">Omset Kemarin</div><div class="v">${rpShort(e.omset_yesterday)}</div></div>
-    <div class="stat"><div class="l">Omset Bulan Ini</div><div class="v">${rpShort(e.omset_mtd)}</div></div>
-    <div class="stat"><div class="l">Estimasi Laba Bulan Ini</div><div class="v sm" style="color:${e.est_profit_mtd>=0?'#22c55e':'#ef4444'}">${rpShort(e.est_profit_mtd)}</div><span class="muted">margin ${e.margin_pct}%</span></div>`;
-
-  const ach = e.achievement_pct;
-  el("targetCard").innerHTML = `
-    <div class="card-title">Target Bulan Ini <span class="muted">${e.target_month?rp(e.target_month):'belum diset'}</span></div>
-    ${e.target_month? `
-      <div style="display:flex;justify-content:space-between;font-size:13px"><span>${rp(e.omset_mtd)}</span><span style="font-weight:700">${ach}%</span></div>
-      <div class="progress"><div class="progress-fill" style="width:${Math.min(ach||0,100)}%"></div></div>
-      <div class="muted" style="margin-top:8px">Proyeksi akhir bulan: <b style="color:#e2e8f0">${rp(e.projected_month)}</b> (${e.projected_vs_target_pct}% target)</div>
-    ` : `<button class="btn primary" onclick="setTarget()">+ Set Target Bulan Ini</button>`}`;
+function renderNav(){
+  $('nav').innerHTML = NAV.map(([k,l]) =>
+    `<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('');
 }
 
-async function setTarget(){
-  const v = prompt("Target omset bulan ini (Rp):");
-  if(!v) return;
-  const month = new Date().toISOString().slice(0,7);
-  await fetch("/api/targets",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({month, revenue_target: Number(v.replace(/\D/g,""))})});
-  toast("Target tersimpan","ok"); load();
+function renderCockpit(){
+  const box = $('cockpit');
+  if(layout!=='cockpit'){ box.style.display='none'; return; }
+  box.style.display='block';
+  const e = DATA.executive||{}, c = DATA.cashflow||{}, al = DATA.alerts||[];
+  const crit = al.filter(a=>a.severity==='critical').length;
+  const kpis = [
+    ['Omset Hari Ini', rpJt(e.omset_today), (e.omset_today_vs_yest_pct!=null? (e.omset_today_vs_yest_pct<0?'▼':'▲')+' '+pctTxt(e.omset_today_vs_yest_pct)+'% vs kemarin':'')],
+    ['Laba MTD', rpJt(e.est_profit_mtd), 'margin '+(e.margin_pct??0)+'%'],
+    ['Saldo Kas', rpJt(c.balance), c.projected_negative?'perlu perhatian':'aman 30 hari'],
+    ['Target Bulan', (e.achievement_pct??0)+'%', rpJt(e.omset_mtd)+' / '+rpJt(e.target_month)],
+    ['Alert Aktif', String(al.length), crit?crit+' kritis':'tidak ada kritis'],
+  ];
+  $('cockpitGrid').innerHTML = kpis.map(k=>
+    `<div class="kpi-dark"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
 }
 
-function renderChannels(d){
-  const c = el("channels"); const list = d.channels||[];
-  if(!list.length){ c.innerHTML='<div class="empty">Belum ada data penjualan.</div>'; return; }
-  c.innerHTML = list.map(ch=>`
-    <div class="row">
-      <div><div class="name">${ch.channel}</div>
-        <div class="meta">${ch.orders_7d} order · AOV ${rpShort(ch.aov)}</div></div>
-      <div><div class="amt">${rpShort(ch.revenue_7d)}</div>
-        <div style="text-align:right">${deltaHtml(ch.growth_pct)}</div></div>
-    </div>`).join("");
+function secHead(eyebrow, title){
+  return `<div class="sec-head"><div class="eyebrow">${eyebrow}</div><h2 class="sec">${title}</h2></div>`;
 }
 
-function renderProducts(d){
-  const c = el("products"); const list = d.products||[];
-  if(!list.length){ c.innerHTML='<div class="empty">Belum ada data produk (upload penjualan per-SKU).</div>'; return; }
-  c.innerHTML = list.map(p=>{
-    let rc = '';
-    if(p.is_new) rc = '<span class="pill" style="background:#2563eb33;color:#60a5fa">BARU</span>';
-    else if(p.rank_change>0) rc = `<span class="pill" style="background:#16653433;color:#22c55e">▲${p.rank_change}</span>`;
-    else if(p.rank_change<0) rc = `<span class="pill" style="background:#7f1d1d33;color:#ef4444">▼${Math.abs(p.rank_change)}</span>`;
-    const margin = p.margin_pct!==null?`margin ${p.margin_pct}%`:'margin -';
-    return `<div class="row">
-      <div style="display:flex;align-items:center"><span class="rank">${p.rank}</span>
-        <div><div class="name">${p.name}${rc}</div>
-          <div class="meta">${p.qty} terjual · ${margin}</div></div></div>
-      <div class="amt">${rpShort(p.revenue)}</div></div>`;
-  }).join("");
+function render(){
+  const fn = {brief:vBrief, exec:vExec, market:vMarket, product:vProduct, ads:vAds,
+    inv:vInv, cash:vCash, alert:vAlert, blueprint:vBlueprint}[tab];
+  $('main').innerHTML = '<section>' + fn() + '</section>';
 }
 
-function renderAds(d){
-  const roas = d.roas!==null?d.roas:"-";
-  const best = d.best_channel? `${d.best_channel.channel} (ROAS ${d.best_channel.roas})` : "-";
-  const worst = d.worst_channel? `${d.worst_channel.channel} (ROAS ${d.worst_channel.roas})` : "-";
-  el("ads").innerHTML = `
-    <div class="stats" style="margin-bottom:6px">
-      <div class="stat"><div class="l">Total Biaya Iklan</div><div class="v sm">${rpShort(d.total_cost)}</div></div>
-      <div class="stat"><div class="l">ROAS</div><div class="v">${roas}</div></div>
-      <div class="stat"><div class="l">ACOS</div><div class="v sm">${d.acos!==null?d.acos+'%':'-'}</div></div>
-      <div class="stat"><div class="l">TACOS</div><div class="v sm">${d.tacos!==null?d.tacos+'%':'-'}</div></div>
+// ───────── A · Brief ─────────
+function vBrief(){
+  const b = DATA.brief||{}, al = DATA.alerts||[];
+  const ctaMap = {roas:'ads',ad:'ads',stock:'inv',oos:'inv',low_stock:'inv',bestseller:'inv',
+    channel:'market',omset:'exec',margin:'cash',cash:'cash'};
+  const labelMap = {ads:'Buka Iklan',inv:'Buka Inventory',market:'Buka Marketplace',exec:'Buka Ringkasan',cash:'Buka Cashflow'};
+  const prio = al.filter(a=>a.severity!=='info').slice(0,3).map((a,i)=>{
+    let dest='exec'; for(const k in ctaMap){ if((a.type||'').includes(k)){ dest=ctaMap[k]; break; } }
+    return `<div class="prio">
+      <div class="num">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div class="t">${esc(a.title)}</div><div class="w">${esc(a.message)}</div>
+      </div>
+      <button class="cta" onclick="setTab('${dest}')">${labelMap[dest]||'Buka'} ›</button>
+    </div>`;
+  }).join('') || '<div class="card empty">Tidak ada prioritas mendesak hari ini. Pertahankan momentum.</div>';
+
+  return `
+    <div class="brief-hero"><div class="glow"></div><div style="position:relative">
+      <div class="pill-dark">Brief Pagi · Auto-generated</div>
+      <h1 class="fd">Ringkasan 5 menit untuk hari ini</h1>
+      <div style="font-size:13px;color:#7a5a1e;font-weight:600">Data per ${esc((DATA.executive||{}).data_date||'-')}</div>
+      <p class="brief-body">${esc(b.body||'Belum ada brief. Upload data lalu klik Refresh.')}</p>
+    </div></div>
+    <div style="margin-top:22px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px;font-weight:800;color:#101a33;letter-spacing:-.01em">Prioritas Hari Ini</span>
     </div>
-    <div class="row"><div class="name">🏆 Terbaik</div><div class="amt" style="color:#22c55e">${best}</div></div>
-    <div class="row"><div class="name">⚠️ Terburuk</div><div class="amt" style="color:#ef4444">${worst}</div></div>`;
+    <div style="margin-top:12px;display:grid;gap:12px">${prio}</div>
+    <div class="note-dark" style="margin-top:18px">
+      <span>📩</span><span>Brief ini bisa dikirim otomatis ke WhatsApp/Telegram tiap pagi via <b style="color:#fff">N8N + AI Agent</b>.</span>
+      <button class="btn-ghost" style="margin-left:auto;background:rgba(255,255,255,.12)" onclick="setTab('blueprint')">Lihat Blueprint ›</button>
+    </div>`;
 }
 
-function renderInventory(d){
-  const low = d.low_stock||[], dead = d.dead_stock||[];
-  let h = '';
-  if(low.length){
-    h += '<div class="card-title">Hampir Habis</div>';
-    h += low.map(s=>`<div class="row"><div><div class="name">${s.name}</div>
-      <div class="meta">sisa ${s.stock_qty} unit</div></div>
-      <div class="tag" style="background:${s.days_left<=3?'#7f1d1d':'#78350f'};color:#fca5a5">${s.days_left} hari lagi</div></div>`).join("");
-  }
-  if(dead.length){
-    h += '<div class="card-title" style="margin-top:14px">Tidak Bergerak >30 Hari</div>';
-    h += dead.map(s=>`<div class="row"><div class="name">${s.name}</div>
-      <div class="amt muted">${s.stock_qty} unit nganggur</div></div>`).join("");
-  }
-  if(!h) h = '<div class="empty">Belum ada data stok, atau semua aman.</div>';
-  el("inventory").innerHTML = h;
+// ───────── B · Executive ─────────
+function vExec(){
+  const e = DATA.executive||{};
+  const kpis = [
+    {l:'Omset Hari Ini', v:rpJt(e.omset_today), s:'data terakhir', d:deltaChip(e.omset_today_vs_yest_pct), color:'#101a33'},
+    {l:'Omset Kemarin', v:rpJt(e.omset_yesterday), s:'full day', color:'#101a33'},
+    {l:'Omset Bulan Ini', v:rpJt(e.omset_mtd), s:'MTD', color:'#101a33'},
+    {l:'Target Bulan', v:rpJt(e.target_month), s:(e.achievement_pct??0)+'% tercapai', color:'#101a33'},
+    {l:'Estimasi Laba', v:rpJt(e.est_profit_mtd), s:'margin '+(e.margin_pct??0)+'%', color:'#1f9d4d', accent:true},
+  ];
+  const cards = kpis.map(k=>`
+    <div class="${k.accent?'card-accent':'card'} kpi">
+      <div class="l">${k.l}</div>
+      <div class="v" style="color:${k.color}">${k.v}</div>
+      <div class="row"><span class="s">${k.s}</span>${k.d||''}</div>
+    </div>`).join('');
+  const ach = e.achievement_pct||0;
+  const remain = Math.max((e.target_month||0)-(e.omset_mtd||0),0);
+  const progress = `
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px">
+        <div><div style="font-size:13px;color:var(--muted);font-weight:600">Pencapaian Target Bulan Ini</div>
+          <div style="font-size:30px;font-weight:800;color:#101a33;letter-spacing:-.02em">${pctTxt(ach)}%</div></div>
+        <div style="text-align:right;font-size:13px;color:var(--muted)">${rpJt(e.omset_mtd)} <span style="color:#cbb98e">/</span> ${rpJt(e.target_month)}<br>
+          <span style="color:var(--gold-lbl);font-weight:700">Sisa ${rpJt(remain)}</span> menuju target</div>
+      </div>
+      <div style="margin-top:14px;height:14px;background:#f0e7d4;border-radius:999px;overflow:hidden">
+        <div style="width:${Math.min(ach,100)}%;height:100%;background:linear-gradient(90deg,#FFB11D,#FD6212);border-radius:999px"></div>
+      </div>
+    </div>`;
+  return secHead('Executive Summary','Performa Bulan Berjalan') +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${cards}</div>` + progress;
 }
 
-function renderCash(d){
-  el("cashStats").innerHTML = `
-    <div class="stat"><div class="l">Saldo Kas</div><div class="v" style="color:${d.balance>=0?'#22c55e':'#ef4444'}">${rpShort(d.balance)}</div></div>
-    <div class="stat"><div class="l">Hutang Supplier</div><div class="v sm" style="color:#ef4444">${rpShort(d.accounts_payable)}</div></div>
-    <div class="stat"><div class="l">Piutang</div><div class="v sm" style="color:#22c55e">${rpShort(d.accounts_receivable)}</div></div>
-    <div class="stat"><div class="l">Pengeluaran Minggu Ini</div><div class="v sm">${rpShort(d.week_expenses)}</div></div>
-    <div class="stat" style="grid-column:1/-1"><div class="l">Prediksi Kas 30 Hari</div>
-      <div class="v" style="color:${d.projected_negative?'#ef4444':'#22c55e'}">${rp(d.projected_cash_30d)}</div>
-      ${d.projected_negative?'<span class="delta down">⚠ butuh perhatian</span>':'<span class="delta up">aman</span>'}</div>`;
+// ───────── C · Marketplace ─────────
+function vMarket(){
+  const list = (DATA.channels||{}).channels||[];
+  if(!list.length) return secHead('Marketplace Performance','Per Channel · Bulan Berjalan')+'<div class="card empty">Belum ada data penjualan.</div>';
+  const cards = list.map(c=>{
+    const col = CH_COLORS[c.channel]||'#888';
+    return `<div class="card" style="border-top:4px solid ${col}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:30px;height:30px;border-radius:9px;background:${col};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;flex:none">${CH_INITIAL[c.channel]||'?'}</div>
+          <span style="font-weight:800;font-size:15.5px;color:#101a33">${esc(c.channel)}</span>
+        </div>${deltaChip(c.growth_pct)}
+      </div>
+      <div style="margin-top:14px;font-size:24px;font-weight:800;color:#101a33;letter-spacing:-.02em">${rpJt(c.revenue)}</div>
+      <div style="font-size:11.5px;color:var(--muted)">omset bulan berjalan</div>
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid #f0e7d4;padding-top:12px">
+        <div><div style="font-size:11px;color:var(--muted)">Order</div><div style="font-size:16px;font-weight:700;color:#1a1205">${(c.orders||0).toLocaleString('id-ID')}</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">AOV</div><div style="font-size:16px;font-weight:700;color:#1a1205">${rp(c.aov)}</div></div>
+      </div></div>`;
+  }).join('');
+  return secHead('Marketplace Performance','Per Channel · Bulan Berjalan') +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr))">${cards}</div>`;
 }
 
+// ───────── D · Produk ─────────
+function vProduct(){
+  const list = (DATA.products||{}).products||[];
+  const rankChip = p=>{
+    if(p.is_new) return '<span class="chip" style="color:#2563eb;background:#e8f0ff">BARU</span>';
+    if(p.rank_change>0) return `<span class="chip" style="color:#1f9d4d;background:#E8F7EC">▲${p.rank_change}</span>`;
+    if(p.rank_change<0) return `<span class="chip" style="color:#C80807;background:#FDEBEA">▼${Math.abs(p.rank_change)}</span>`;
+    return '<span class="chip" style="color:#9a8a6a;background:#f4ecdc">–</span>';
+  };
+  const gcol = '38px 2.4fr 1.1fr .7fr .8fr .8fr';
+  const rows = list.length ? list.map(p=>`
+    <div class="tr" style="grid-template-columns:${gcol}">
+      <div style="font-weight:800;color:#cbb98e;font-size:15px">${p.rank}</div>
+      <div><div style="font-weight:700;font-size:14px;color:#1a1205;line-height:1.25">${esc(p.name)}</div>
+        <div style="font-size:11px;color:#9a8a6a">${esc(p.category)}</div></div>
+      <div style="text-align:right;font-weight:700;color:#101a33">${rpJt(p.revenue)}</div>
+      <div style="text-align:right;color:var(--slate)">${(p.qty||0).toLocaleString('id-ID')}</div>
+      <div style="text-align:right;font-weight:700;color:#1f9d4d">${p.margin_pct!=null?p.margin_pct+'%':'–'}</div>
+      <div style="text-align:center">${rankChip(p)}</div>
+    </div>`).join('') : '<div class="empty">Belum ada data produk per-SKU.</div>';
+  return secHead('Produk Terlaris','Top 10 Produk · Bulan Berjalan') +
+    `<div class="tbl"><div class="th" style="grid-template-columns:${gcol}">
+      <div>#</div><div>Produk</div><div style="text-align:right">Omset</div><div style="text-align:right">Qty</div>
+      <div style="text-align:right">Margin</div><div style="text-align:center">Rank</div></div>${rows}</div>`;
+}
+
+// ───────── E · Iklan ─────────
+function vAds(){
+  const a = DATA.advertising||{};
+  const adStatus = roas=>{
+    if(roas==null) return ['–','#8a7a5a','#f0e7d4'];
+    if(roas>=5) return ['naik','#1f9d4d','#E8F7EC'];
+    if(roas>=3.5) return ['stabil','#8a7a5a','#f0e7d4'];
+    return ['turun','#C80807','#FDEBEA'];
+  };
+  const top = `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+    <div style="background:#101a33;color:#fff;border-radius:18px;padding:18px">
+      <div style="font-size:12px;color:#9fb0cc;font-weight:600">Total Biaya Iklan</div>
+      <div style="font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-.02em">${rpJt(a.total_cost)}</div>
+      <div style="font-size:12px;color:#c9d3e6">${a.tacos!=null?a.tacos+'% dari omset (TACOS)':'—'}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">ROAS Keseluruhan</div>
+      <div style="font-size:26px;font-weight:800;margin-top:6px;color:#1f9d4d;letter-spacing:-.02em">${a.roas!=null?a.roas+'×':'–'}</div>
+      <div style="font-size:12px;color:var(--muted)">target ≥ 3,5×</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">ACOS</div>
+      <div style="font-size:26px;font-weight:800;margin-top:6px;color:#101a33;letter-spacing:-.02em">${a.acos!=null?a.acos+'%':'–'}</div>
+      <div style="font-size:12px;color:var(--muted)">TACOS ${a.tacos!=null?a.tacos+'%':'–'}</div></div></div>`;
+  const best = a.best_channel, worst = a.worst_channel;
+  const bw = `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:14px">
+    <div style="background:#E8F7EC;border:1px solid #b8e6c6;border-radius:16px;padding:16px">
+      <div style="font-size:11.5px;color:#1f7d3d;font-weight:700;letter-spacing:.04em;text-transform:uppercase">★ Performa Terbaik</div>
+      <div style="font-size:19px;font-weight:800;color:#101a33;margin-top:4px">${best?esc(best.channel):'–'}</div>
+      <div style="font-size:13px;color:#2a6a3d">${best?'ROAS '+best.roas+'× · layak di-scale up':'belum ada data'}</div></div>
+    <div style="background:#FDEBEA;border:1px solid #f2bdb9;border-radius:16px;padding:16px">
+      <div style="font-size:11.5px;color:#C80807;font-weight:700;letter-spacing:.04em;text-transform:uppercase">▼ Performa Terburuk</div>
+      <div style="font-size:19px;font-weight:800;color:#101a33;margin-top:4px">${worst?esc(worst.channel):'–'}</div>
+      <div style="font-size:13px;color:#a3322e">${worst?'ROAS '+worst.roas+'× · perlu cek kampanye':'belum ada data'}</div></div></div>`;
+  const gcol = '1.4fr 1fr 1fr 1.1fr';
+  const rows = (a.per_channel||[]).map(c=>{
+    const [st,sc,sb] = adStatus(c.roas);
+    return `<div class="tr" style="grid-template-columns:${gcol}">
+      <div style="font-weight:700;color:#1a1205">${esc(c.channel)}</div>
+      <div style="text-align:right;color:var(--slate)">${rpJt(c.cost)}</div>
+      <div style="text-align:right;font-weight:800;color:${c.roas!=null&&c.roas<3.5?'#C80807':'#1f9d4d'}">${c.roas!=null?c.roas+'×':'–'}</div>
+      <div style="text-align:right"><span class="chip" style="color:${sc};background:${sb}">${st}</span></div></div>`;
+  }).join('') || '<div class="empty">Belum ada data iklan.</div>';
+  const tbl = `<div class="tbl" style="margin-top:14px"><div class="th" style="grid-template-columns:${gcol}">
+    <div>Channel</div><div style="text-align:right">Biaya</div><div style="text-align:right">ROAS</div><div style="text-align:right">Status</div></div>${rows}</div>`;
+  return secHead('Advertising Performance','Iklan · 7 Hari Terakhir') + top + bw + tbl;
+}
+
+// ───────── F · Inventory ─────────
+function vInv(){
+  const inv = DATA.inventory||{};
+  const sevOf = d=> d==null?'ok' : (d<=5?'high':(d<=10?'warn':'ok'));
+  const dCol = {high:'#C80807',warn:'#E0930A',ok:'#1f9d4d'};
+  const dBg = {high:'#FDEBEA',warn:'#FFF4DC',ok:'#E8F7EC'};
+  const low = (inv.low_stock||[]).map(s=>{
+    const sev = sevOf(s.days_left);
+    return `<div class="card" style="border-left:4px solid ${dCol[sev]};padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span style="font-weight:700;font-size:14px;color:#1a1205">${esc(s.name)}</span>
+        <span class="chip" style="color:${dCol[sev]};background:${dBg[sev]}">± ${s.days_left} hari</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Sisa stok: ${s.stock_qty} unit · estimasi habis</div></div>`;
+  }).join('') || '<div class="empty">Tidak ada stok kritis. Aman.</div>';
+  const dead = (inv.dead_stock||[]).map(d=>`
+    <div class="card" style="padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span style="font-weight:700;font-size:14px;color:#1a1205">${esc(d.name)}</span>
+        <span class="chip" style="color:#9a8a6a;background:#f4ecdc">&gt; 30 hari</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Stok menumpuk: ${d.stock_qty} unit · pertimbangkan promo/bundling</div></div>`
+  ).join('') || '<div class="empty">Tidak ada barang diam.</div>';
+  return secHead('Inventory Alert','Stok yang Butuh Perhatian') +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div><div style="font-size:13px;font-weight:800;color:var(--gold-lbl);margin-bottom:10px">⏳ Hampir Habis</div>
+        <div style="display:grid;gap:10px">${low}</div></div>
+      <div><div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:10px">🕸 Tidak Bergerak &gt; 30 Hari</div>
+        <div style="display:grid;gap:10px">${dead}</div></div></div>`;
+}
+
+// ───────── G · Cashflow ─────────
+function vCash(){
+  const c = DATA.cashflow||{};
+  const cards = `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    <div style="background:linear-gradient(135deg,#101a33,#243a66);color:#fff;border-radius:18px;padding:18px">
+      <div style="font-size:12px;color:#9fb0cc;font-weight:600">💰 Saldo Kas</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;letter-spacing:-.02em">${rpJt(c.balance)}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">Hutang Supplier</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;color:#C80807;letter-spacing:-.02em">${rpJt(c.accounts_payable)}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">Piutang</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;color:#1f9d4d;letter-spacing:-.02em">${rpJt(c.accounts_receivable)}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">Pengeluaran Minggu Ini</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;color:#101a33;letter-spacing:-.02em">${rpJt(c.week_expenses)}</div></div></div>`;
+  const proj = c.projected_cash_30d||0;
+  const predict = `<div style="background:#fff6e3;border:1px solid #f3dca8;border-radius:18px;padding:20px">
+    <div style="font-size:12.5px;color:var(--gold-lbl);font-weight:700;letter-spacing:.04em;text-transform:uppercase">Prediksi Kas · 30 Hari</div>
+    <div style="font-size:28px;font-weight:800;color:#101a33;margin-top:6px;letter-spacing:-.02em">${rpJt(proj)}</div>
+    <div style="font-size:13px;font-weight:700;margin-top:4px;color:${c.projected_negative?'#C80807':'#2a6a3d'}">${c.projected_negative?'⚠ Perlu perhatian — atur penagihan & tunda pengeluaran':'✓ Kas aman'}</div></div>`;
+  const bd = (c.breakdown||[]).map(b=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px">
+      <span style="color:var(--slate)">${esc(b.label)}</span><span style="font-weight:700;color:#1a1205">${rpJt(b.amount)}</span></div>`
+  ).join('') || '<div class="empty">Belum ada data pengeluaran.</div>';
+  const detail = `<div class="card"><div style="font-size:12.5px;color:var(--muted);font-weight:700;margin-bottom:12px">Rincian Pengeluaran Minggu Ini</div>${bd}</div>`;
+  return secHead('Cashflow Monitoring','Arus Kas Bisnis') + cards +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:14px">${predict}${detail}</div>`;
+}
+
+// ───────── H · Alert ─────────
+function vAlert(){
+  const al = DATA.alerts||[];
+  const sev = {critical:{bg:'#FDEBEA',bd:'#f2bdb9',dot:'#C80807',glow:'#f7cfcc',tc:'#C80807',tb:'#fbd9d6'},
+    warning:{bg:'#FFF6E3',bd:'#f3dca8',dot:'#E0930A',glow:'#f8e6bd',tc:'#b5740a',tb:'#fbeccb'},
+    info:{bg:'#fbf6ec',bd:'#ECE3D2',dot:'#8a7a5a',glow:'#ece0c8',tc:'#8a7a5a',tb:'#f0e7d4'}};
+  const items = al.length ? al.map(a=>{
+    const s = sev[a.severity]||sev.info;
+    const tagText = (a.type||'alert').split('_')[0];
+    return `<div class="alert" style="background:${s.bg};border:1px solid ${s.bd}">
+      <div class="dot" style="background:${s.dot};box-shadow:0 0 0 4px ${s.glow}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+          <span class="t">${esc(a.title)}</span>
+          <span class="tag" style="color:${s.tc};background:${s.tb}">${esc(tagText)}</span></div>
+        <div class="m">${esc(a.message)}</div></div></div>`;
+  }).join('') : '<div class="card empty">✅ Tidak ada anomali terdeteksi. Semua aman.</div>';
+  const rules = ['Omset turun > 20% vs kemarin / minggu lalu','ROAS channel di bawah target 3,5×',
+    'Best seller stok habis / < 7 hari','Margin turun di bawah ambang sehat',
+    'Biaya iklan melonjak > 150% rata-rata','Omset 1 marketplace anjlok > 40%','Prediksi kas 30 hari negatif'];
+  const ruleBox = `<div class="card" style="margin-top:20px"><div style="font-size:13px;font-weight:800;color:#101a33;margin-bottom:12px">Aturan Alert Aktif</div>
+    <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${rules.map(r=>
+      `<div style="display:flex;gap:9px;align-items:center;font-size:13px;color:var(--slate);background:var(--nav);border:1px solid #f0e7d4;border-radius:11px;padding:10px 12px">
+        <span style="color:#1f9d4d;font-weight:800;flex:none">✓</span><span>${r}</span></div>`).join('')}</div></div>`;
+  return secHead('CEO Alert Center','Deteksi Anomali Otomatis') + `<div style="display:grid;gap:11px">${items}</div>` + ruleBox;
+}
+
+// ───────── Blueprint (static, dokumentasi arsitektur nyata) ─────────
+function vBlueprint(){
+  const arch = [['1','Sumber Data','Upload XLSX/CSV seller center + (nanti) API resmi marketplace'],
+    ['2','Importer','Parse & normalisasi otomatis ke database'],['3','Database','SQLite → Supabase/PostgreSQL'],
+    ['4','Analytics','Agregasi KPI + deteksi anomali'],['5','Dashboard + AI Brief','Tampilan ini + brief harian via Claude']];
+  const archHtml = arch.map(s=>`<div style="display:flex;align-items:center;gap:8px;flex:none">
+    <div style="width:180px;background:var(--nav);border:1px solid #f0e7d4;border-top:4px solid var(--gold);border-radius:14px;padding:13px 14px">
+      <div style="font-size:11px;color:var(--gold-lbl);font-weight:800">LANGKAH ${s[0]}</div>
+      <div style="font-size:15px;font-weight:800;color:#101a33;margin-top:3px">${s[1]}</div>
+      <div style="font-size:11.5px;color:#6a5a3a;margin-top:4px;line-height:1.4">${s[2]}</div></div>
+    <span style="color:#cbb98e;font-size:20px;font-weight:800;flex:none">›</span></div>`).join('');
+  const tables = [['channels','nama channel · status'],['products','sku · nama · kategori · hpp'],
+    ['sales_daily','tanggal · channel · sku · qty · omset · order'],['ad_spend_daily','tanggal · channel · biaya · roas · konversi'],
+    ['inventory_snapshot','tanggal · sku · stok'],['cash_ledger','tanggal · tipe(in/out/ar/ap) · nominal · jatuh tempo'],
+    ['targets','bulan · target omset'],['alerts','waktu · tipe · severity · pesan'],['daily_brief','tanggal · isi brief']];
+  const tblHtml = tables.map(t=>`<div style="background:var(--nav);border:1px solid #f0e7d4;border-radius:11px;padding:10px 13px">
+    <code style="font-size:13px;font-weight:800;color:#9a6a0a">${t[0]}</code>
+    <div style="font-size:11.5px;color:#6a5a3a;margin-top:2px">${t[1]}</div></div>`).join('');
+  const stack = [['Database','SQLite → Supabase','Mulai nol-config, naik ke API otomatis'],
+    ['Backend','Python + Flask','Ringan, sudah dikuasai'],['Importer','openpyxl','Baca XLSX & CSV'],
+    ['Dashboard','HTML + JS','Mobile-first, satu file'],['AI','Claude API','Generate Daily Brief'],
+    ['Automasi','N8N','Scheduler & ETL (fase lanjut)']];
+  const stackHtml = stack.map(t=>`<div style="display:flex;gap:11px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:8px">
+    <span style="font-size:11px;font-weight:800;color:#fff;background:#101a33;padding:3px 9px;border-radius:999px;flex:none;min-width:72px;text-align:center">${t[0]}</span>
+    <div><div style="font-size:13.5px;font-weight:800;color:#1a1205">${t[1]}</div><div style="font-size:11.5px;color:#6a5a3a">${t[2]}</div></div></div>`).join('');
+  const daily = ['Per channel: omset, jumlah order','Per channel: biaya iklan & omset iklan (ROAS/ACOS/TACOS)',
+    'Per SKU: qty terjual, omset, sisa stok','Kas: saldo, pemasukan & pengeluaran','Hutang supplier & piutang','Target bulan (set sekali)'];
+  const dailyHtml = daily.map(d=>`<div style="display:flex;gap:9px;align-items:flex-start;background:rgba(255,255,255,.07);border-radius:11px;padding:11px 13px;font-size:13px;color:#dbe2ee">
+    <span style="color:#FFB11D;font-weight:800;flex:none">●</span><span>${d}</span></div>`).join('');
+  const roadmap = [['Minggu 1','MVP',['Skema DB + upload XLSX/CSV','Executive Summary + Daily Brief','Alert engine dasar']],
+    ['Minggu 2','Produk & Iklan',['Top 10 produk + margin','ROAS/ACOS/TACOS per channel']],
+    ['Minggu 3','Inventory & Kas',['Alert stok & dead stock','Monitoring kas + prediksi 30 hari']],
+    ['Minggu 4','Otomasi & AI',['Pindah ke N8N + Supabase','AI brief & notif WA/Telegram tiap pagi']]];
+  const roadHtml = roadmap.map(w=>`<div class="card" style="padding:16px">
+    <div style="display:inline-block;font-size:11px;font-weight:800;color:#9a6a0a;background:#fdf2da;border:1px solid #f0d9a4;padding:3px 10px;border-radius:999px">${w[0]}</div>
+    <div style="font-size:15px;font-weight:800;color:#101a33;margin:9px 0 8px">${w[1]}</div>
+    <div style="display:grid;gap:6px">${w[2].map(it=>`<div style="display:flex;gap:7px;font-size:12.5px;color:#5a5240;line-height:1.4"><span style="color:var(--gold);flex:none">•</span><span>${it}</span></div>`).join('')}</div></div>`).join('');
+
+  return secHead('Technical Blueprint','Cara Membangun Sistem Ini') +
+    `<div class="card"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:14px">1 · Arsitektur Sistem</div>
+      <div class="scroll" style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding-bottom:6px">${archHtml}</div></div>
+    <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:14px">
+      <div class="card"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:12px">2 · Struktur Database</div>
+        <div style="display:grid;gap:8px">${tblHtml}</div></div>
+      <div class="card"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:12px">3 · Tech Stack</div>
+        <div style="display:grid;gap:8px">${stackHtml}</div></div></div>
+    <div style="margin-top:14px;background:#101a33;border-radius:18px;padding:20px;color:#fff">
+      <div style="font-size:14px;font-weight:800;margin-bottom:12px">4 · Data Wajib Tiap Hari</div>
+      <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">${dailyHtml}</div></div>
+    <div style="margin-top:14px"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:12px">5 · Roadmap 30 Hari</div>
+      <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${roadHtml}</div></div>`;
+}
+
+// ───────── actions ─────────
 async function refresh(){
-  const b = el("refreshBtn"); b.textContent="↻ …"; b.disabled=true;
-  try{ await fetch("/api/refresh",{method:"POST"}); await load(); toast("Diperbarui","ok"); }
-  catch(e){ toast("Gagal refresh","err"); }
-  b.textContent="↻ Refresh"; b.disabled=false;
+  const b=$('refreshBtn'); b.textContent='…';
+  try{ await fetch('/api/refresh',{method:'POST'}); await load(); toast('Diperbarui'); }
+  catch(e){ toast('Gagal refresh'); }
+  b.textContent='↻';
 }
-
 async function upload(files){
   if(!files||!files.length) return;
-  const fd = new FormData();
-  for(const f of files) fd.append("file", f);
-  toast("Mengunggah "+files.length+" file…");
+  const fd=new FormData(); for(const f of files) fd.append('file', f);
+  toast('Mengunggah '+files.length+' file…');
   try{
-    const r = await fetch("/api/upload",{method:"POST",body:fd});
-    const d = await r.json();
-    const ok = d.results.filter(x=>x.ok);
-    const types = ok.map(x=>`${x.type} (${x.rows_imported})`).join(", ");
-    if(ok.length) toast("Terimport: "+types,"ok");
-    else toast("Gagal: "+(d.results[0]&&d.results[0].error||"format tak dikenal"),"err");
+    const r=await fetch('/api/upload',{method:'POST',body:fd});
+    const d=await r.json();
+    const ok=d.results.filter(x=>x.ok);
+    toast(ok.length? 'Terimport: '+ok.map(x=>x.type+' ('+x.rows_imported+')').join(', ') : 'Gagal: '+((d.results[0]||{}).error||'format tak dikenal'));
     load();
-  }catch(e){ toast("Upload gagal","err"); }
+  }catch(e){ toast('Upload gagal'); }
 }
+$('file').addEventListener('change', e=>upload(e.target.files));
 
-el("fileInput").addEventListener("change", e=>upload(e.target.files));
-const ub = el("uploadbox");
-ub.addEventListener("click",()=>el("fileInput").click());
-["dragover","dragenter"].forEach(ev=>ub.addEventListener(ev,e=>{e.preventDefault();ub.classList.add("drag");}));
-["dragleave","drop"].forEach(ev=>ub.addEventListener(ev,e=>{e.preventDefault();ub.classList.remove("drag");}));
-ub.addEventListener("drop",e=>upload(e.dataTransfer.files));
-
+setLayout('brief');
 load();
-setInterval(load, 60000);
+setInterval(load, 120000);
 </script>
 </body>
 </html>

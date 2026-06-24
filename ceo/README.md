@@ -89,7 +89,7 @@ Upload XLSX/CSV ─▶ importer.py ─▶ SQLite (db.py) ─▶ analytics.py ─
 | `analytics.py` | Semua agregasi KPI + perhitungan delta |
 | `alerts.py` | Alert engine (8 rule) + Daily Brief (Claude/fallback) |
 | `app.py` | Flask: web, API, upload, scheduler harian, push Telegram |
-| `dashboard.html` | UI mobile-first (vanilla JS, satu file) |
+| `dashboard.html` | UI mobile-first (vanilla JS) — tema "Cahaya Senja" sunset, toggle Brief-first/Cockpit, 9 tab termasuk Blueprint. Berdasarkan desain Claude Design, wired ke API real |
 | `seed.py` | Data contoh realistis untuk demo |
 
 ### Threshold alert (mudah dikalibrasi)
