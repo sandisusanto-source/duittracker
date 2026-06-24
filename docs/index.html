@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cahaya Senja · CEO Dashboard (Demo)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#F6EFE2; --navy:#101a33; --navy2:#1b2c52;
+  --ink:#1a1205; --heading:#101a33; --muted:#8a7a5a; --slate:#3a4860;
+  --gold:#E0930A; --gold-l:#FFB11D; --gold-lbl:#b5740a; --orange:#FD6212;
+  --red:#C80807; --green:#1f9d4d;
+  --card:#fff; --border:#ECE3D2; --soft:#fff6e3; --soft2:#ffe9c9;
+  --nav:#fbf6ec; --line:#f4ecdc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  -webkit-font-smoothing:antialiased;padding-bottom:48px;min-height:100vh}
+.fd{font-family:'Fredoka','Plus Jakarta Sans',sans-serif}
+.wrap{max-width:1180px;margin:0 auto}
+.scroll::-webkit-scrollbar{height:6px;width:6px}
+.scroll::-webkit-scrollbar-thumb{background:#d9c8a8;border-radius:99px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+section{animation:rise .4s ease both}
+
+/* header */
+header{background:linear-gradient(120deg,#101a33 0%,#1b2c52 52%,#5a3a17 130%);color:#fff;
+  padding:18px clamp(16px,4vw,40px) 20px;position:relative;overflow:hidden}
+header .glow{position:absolute;top:-60px;right:-30px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,#FFB11D55,transparent 68%);pointer-events:none}
+.hrow{display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between;position:relative}
+.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#FFB11D,#FD6212);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(253,98,18,.4);flex:none}
+.logo span{font-weight:700;font-size:22px;color:#101a33}
+.brandname{font-weight:600;font-size:21px;letter-spacing:-.01em;line-height:1;white-space:nowrap}
+.brandsub{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:#FFD27A;font-weight:600;margin-top:3px}
+.greet{font-size:13.5px;font-weight:700;white-space:nowrap}
+.greetsub{font-size:11.5px;color:#b8c2d6}
+.toggle{display:flex;background:rgba(255,255,255,.1);border-radius:999px;padding:3px;gap:2px}
+.toggle button{border:none;font-size:12.5px;padding:7px 15px;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:600;background:transparent;color:#c9d3e6}
+.toggle button.on{background:#fff;color:#101a33;font-weight:700}
+
+/* cockpit strip */
+.cockpit{background:#101a33;padding:0 clamp(16px,4vw,40px) 16px}
+.cockpit .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi-dark{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 14px}
+.kpi-dark .l{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#9fb0cc;font-weight:600}
+.kpi-dark .v{font-size:20px;font-weight:800;color:#fff;margin-top:4px;letter-spacing:-.02em}
+.kpi-dark .s{font-size:11px;color:#c9d3e6;margin-top:2px}
+
+/* nav */
+nav{background:var(--nav);border-bottom:1px solid #e7dcc4;position:sticky;top:0;z-index:20;box-shadow:0 4px 14px rgba(80,55,15,.05)}
+nav .inner{display:flex;gap:6px;overflow-x:auto;padding:9px clamp(12px,4vw,40px)}
+nav button{border:none;font-size:13.5px;padding:9px 16px;border-radius:999px;cursor:pointer;font-family:inherit;
+  font-weight:600;background:transparent;color:#7a6a48;white-space:nowrap;flex:none}
+nav button.on{background:var(--gold);color:#fff;font-weight:700;box-shadow:0 6px 14px rgba(224,147,10,.28)}
+
+main{padding:clamp(16px,3.5vw,30px) clamp(14px,4vw,40px)}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-lbl);font-weight:700}
+h2.sec{font-size:24px;font-weight:800;margin:4px 0 0;color:var(--heading);letter-spacing:-.02em}
+.sec-head{margin-bottom:16px}
+.gridfit{display:grid;gap:14px}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 26px rgba(60,40,10,.06)}
+.card-accent{background:var(--soft);border:1px solid #f3dca8;border-radius:18px;padding:18px;box-shadow:0 10px 26px rgba(220,150,30,.1)}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:26px;font-weight:800;margin:6px 0 2px;letter-spacing:-.02em}
+.kpi .row{display:flex;align-items:center;gap:8px}
+.kpi .s{font-size:12px;color:var(--muted)}
+.delta{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.d-up{color:var(--green);background:#E8F7EC}
+.d-down{color:var(--red);background:#FDEBEA}
+.d-flat{color:var(--muted);background:#f0e7d4}
+
+/* brief */
+.brief-hero{background:linear-gradient(135deg,#fff6e3 0%,#ffe9c9 60%,#ffdca6 100%);border:1px solid #f3dca8;
+  border-radius:24px;padding:clamp(20px,3vw,32px);box-shadow:0 16px 40px rgba(220,150,30,.14);position:relative;overflow:hidden}
+.brief-hero .glow{position:absolute;top:-50px;right:-20px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,#FFB11D88,transparent 70%)}
+.pill-dark{display:inline-flex;align-items:center;gap:8px;background:#101a33;color:#FFD27A;font-size:11.5px;
+  font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:6px 13px;border-radius:999px}
+.brief-hero h1{font-weight:600;font-size:clamp(24px,4vw,34px);margin:14px 0 4px;color:#1a1205;letter-spacing:-.01em;line-height:1.12}
+.brief-body{font-size:clamp(15px,1.9vw,17px);line-height:1.7;color:#2a2113;margin:16px 0 0;max-width:780px;white-space:pre-wrap}
+.prio{background:#fff;border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:16px;padding:16px 18px;
+  display:flex;align-items:center;gap:15px;box-shadow:0 8px 22px rgba(60,40,10,.06)}
+.prio .num{width:34px;height:34px;border-radius:50%;background:#101a33;color:#FFD27A;font-weight:800;font-size:15px;
+  display:flex;align-items:center;justify-content:center;flex:none}
+.prio .t{font-size:15px;font-weight:700;color:#1a1205;line-height:1.35}
+.prio .w{font-size:12px;color:var(--muted);margin-top:2px}
+.prio .cta{background:#fdf2da;color:#9a6a0a;border:1px solid #f0d9a4;font-weight:700;font-size:12.5px;padding:8px 14px;
+  border-radius:999px;cursor:pointer;white-space:nowrap;flex:none;font-family:inherit}
+.note-dark{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#101a33;border-radius:16px;padding:14px 18px;color:#c9d3e6;font-size:13.5px}
+
+/* tables */
+.tbl{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 26px rgba(60,40,10,.06);overflow:hidden}
+.tbl .th,.tbl .tr{display:grid;gap:10px;padding:13px 18px;align-items:center}
+.tbl .th{background:var(--nav);border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);font-weight:700}
+.tbl .tr{border-bottom:1px solid var(--line);font-size:14px}
+.tbl .tr:last-child{border-bottom:none}
+.chip{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px}
+
+.alert{border-radius:15px;padding:15px 18px;display:flex;gap:14px;align-items:flex-start}
+.alert .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none}
+.alert .t{font-weight:800;font-size:14.5px;color:#1a1205}
+.alert .m{font-size:13px;color:#5a5240;margin-top:3px;line-height:1.45}
+.tag{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+
+.empty{color:var(--muted);font-size:13px;padding:18px;text-align:center}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#101a33;color:#fff;
+  padding:12px 18px;border-radius:12px;font-size:13px;z-index:99;opacity:0;transition:.3s;max-width:90%}
+.toast.show{opacity:1}
+.upload{border:2px dashed #d9c8a8;border-radius:16px;padding:22px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}
+.upload.drag{border-color:var(--gold);background:#fff6e3;color:var(--gold-lbl)}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:999px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="glow"></div>
+  <div class="wrap hrow">
+    <div style="display:flex;align-items:center;gap:13px;flex:none">
+      <div class="logo"><span class="fd">C</span></div>
+      <div>
+        <div class="fd brandname">Cahaya Senja</div>
+        <div class="brandsub">CEO Dashboard</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="text-align:right;line-height:1.3">
+        <div class="greet" id="greeting">Selamat datang</div>
+        <div class="greetsub" id="dateLong">—</div>
+      </div>
+      <div class="toggle">
+        <button id="tgBrief" onclick="setLayout('brief')">Brief-first</button>
+        <button id="tgCockpit" onclick="setLayout('cockpit')">Cockpit</button>
+      </div>
+      <button class="btn-ghost" onclick="document.getElementById('file').click()">⬆ Upload</button>
+      <button class="btn-ghost" id="refreshBtn" onclick="refresh()">↻</button>
+    </div>
+  </div>
+</header>
+<input type="file" id="file" accept=".csv,.xlsx,.xls" multiple style="display:none">
+
+<div class="cockpit" id="cockpit" style="display:none"><div class="wrap grid scroll" id="cockpitGrid"></div></div>
+
+<nav><div class="wrap inner scroll" id="nav"></div></nav>
+
+<main class="wrap" id="main"><div class="empty">Memuat dashboard…</div></main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ───────── helpers ─────────
+const $ = id => document.getElementById(id);
+function rp(n){ return 'Rp ' + Math.round(Number(n)||0).toLocaleString('id-ID'); }
+function rpJt(n){
+  n = Number(n)||0; const a = Math.abs(n);
+  if(a>=1e9) return 'Rp ' + (n/1e9).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' M';
+  if(a>=1e6) return 'Rp ' + (n/1e6).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' jt';
+  if(a>=1e3) return 'Rp ' + Math.round(n/1e3) + ' rb';
+  return 'Rp ' + Math.round(n);
+}
+function pctTxt(p){ return Math.abs(p).toString().replace('.', ','); }
+function deltaChip(pct, goodUp=true){
+  if(pct===null||pct===undefined) return '<span class="delta d-flat">–</span>';
+  const good = pct===0 ? null : (goodUp ? pct>0 : pct<0);
+  const cls = pct===0 ? 'd-flat' : (good ? 'd-up' : 'd-down');
+  const arr = pct>0 ? '▲' : (pct<0 ? '▼' : '–');
+  return `<span class="delta ${cls}">${arr} ${pctTxt(pct)}%</span>`;
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.className='toast show'; setTimeout(()=>t.className='toast',3000); }
+
+const CH_COLORS = {'Shopee':'#EE4D2D','Tokopedia':'#42B549','TikTok Shop':'#111111','Lazada':'#0F146D'};
+const CH_INITIAL = {'Shopee':'S','Tokopedia':'T','TikTok Shop':'TT','Lazada':'L'};
+
+const NAV = [
+  ['brief','Daily Brief'],['exec','Ringkasan'],['market','Marketplace'],['product','Produk'],
+  ['ads','Iklan'],['inv','Inventory'],['cash','Cashflow'],['alert','Alert'],['blueprint','Blueprint'],
+];
+
+let DATA = null;
+const EMBEDDED = {"advertising":{"acos":16.4,"best_channel":{"channel":"Tokopedia","cost":731290.0,"roas":6.43,"tacos":7.0},"per_channel":[{"channel":"Shopee","cost":1431130.0,"roas":5.68,"tacos":7.7},{"channel":"Tokopedia","cost":731290.0,"roas":6.43,"tacos":7.0},{"channel":"TikTok Shop","cost":749280.0,"roas":6.43,"tacos":7.0},{"channel":"Lazada","cost":321790.0,"roas":6.43,"tacos":7.0}],"period":"7 hari terakhir","roas":6.1,"tacos":7.3,"total_cost":3233490.0,"worst_channel":{"channel":"Shopee","cost":1431130.0,"roas":5.68,"tacos":7.7}},"alerts":[{"created_at":"2026-06-24T17:03:57","id":2,"is_read":0,"message":"Produk terlaris Display Necklace Stand stoknya 0. Restock segera!","payload":"{\"sku\": \"DPS-NK\"}","severity":"critical","title":"Best-seller habis: Display Necklace Stand","type":"bestseller_oos"},{"created_at":"2026-06-24T17:03:57","id":1,"is_read":0,"message":"Omset hari ini Rp 1.817.000, turun 60% dibanding kemarin.","payload":"{\"pct\": -59.8}","severity":"critical","title":"Omset turun tajam","type":"omset_drop"},{"created_at":"2026-06-24T17:03:57","id":5,"is_read":0,"message":"Kotak Cincin Premium diperkirakan habis dalam 3 hari (sisa 18 unit).","payload":"{\"sku\": \"KCP-01\", \"name\": \"Kotak Cincin Premium\", \"stock_qty\": 18, \"days_left\": 3}","severity":"warning","title":"Stok menipis: Kotak Cincin Premium","type":"low_stock"},{"created_at":"2026-06-24T17:03:57","id":4,"is_read":0,"message":"Display Cincin Roll diperkirakan habis dalam 2 hari (sisa 8 unit).","payload":"{\"sku\": \"DPC-R\", \"name\": \"Display Cincin Roll\", \"stock_qty\": 8, \"days_left\": 2}","severity":"warning","title":"Stok menipis: Display Cincin Roll","type":"low_stock"},{"created_at":"2026-06-24T17:03:57","id":3,"is_read":0,"message":"Display Necklace Stand diperkirakan habis dalam 0 hari (sisa 0 unit).","payload":"{\"sku\": \"DPS-NK\", \"name\": \"Display Necklace Stand\", \"stock_qty\": 0, \"days_left\": 0}","severity":"warning","title":"Stok menipis: Display Necklace Stand","type":"low_stock"}],"brief":{"body":"Omset terakhir (2026-06-24) Rp 1.817.000, turun 60% dibanding kemarin. Pencapaian target bulan ini 33% (Rp 116.149.000 dari Rp 350.000.000), estimasi laba Rp 43.681.180 (margin 38%). Produk terbaik: Timbangan Digital AJ1002C (Rp 33.069.000). ROAS terlemah di Shopee (5.7).\n\nPrioritas hari ini:\n1. Restock Display Necklace Stand (habis dalam 0 hari).","created_at":"2026-06-24T17:03:57","date":"2026-06-24"},"cashflow":{"accounts_payable":97000000,"accounts_receivable":88000000,"balance":121500000,"breakdown":[{"amount":9000000.0,"label":"Biaya"},{"amount":6500000.0,"label":"Operasional"}],"projected_cash_30d":46071429,"projected_negative":false,"week_expenses":15500000},"channels":{"channels":[{"aov":192352,"channel":"Shopee","growth_pct":28.9,"orders":253,"revenue":48665000.0,"revenue_7d":18482000.0},{"aov":195446,"channel":"Tokopedia","growth_pct":18.7,"orders":148,"revenue":28926000.0,"revenue_7d":10447000.0},{"aov":203475,"channel":"TikTok Shop","growth_pct":36.0,"orders":139,"revenue":28283000.0,"revenue_7d":10704000.0},{"aov":218617,"channel":"Lazada","growth_pct":141.3,"orders":47,"revenue":10275000.0,"revenue_7d":4597000.0}],"period":"Bulan berjalan"},"executive":{"achievement_pct":33.2,"data_date":"2026-06-24","est_profit_mtd":43681180,"margin_pct":37.6,"omset_mtd":116149000.0,"omset_today":1817000.0,"omset_today_vs_yest_pct":-59.8,"omset_yesterday":4524000.0,"projected_month":145186250,"projected_vs_target_pct":41.5,"target_month":350000000.0},"inventory":{"dead_stock":[{"name":"Display Akrilik Model Lama","sku":"OLD-DISPLAY","stock_qty":45}],"low_stock":[{"days_left":0,"name":"Display Necklace Stand","sku":"DPS-NK","stock_qty":0},{"days_left":2,"name":"Display Cincin Roll","sku":"DPC-R","stock_qty":8},{"days_left":3,"name":"Kotak Cincin Premium","sku":"KCP-01","stock_qty":18}],"snapshot_date":"2026-06-24"},"products":{"period":"Bulan berjalan","products":[{"category":"Timbangan","is_new":false,"margin_pct":33.8,"name":"Timbangan Digital AJ1002C","qty":151,"rank":1,"rank_change":0,"revenue":33069000.0,"sku":"AJ1002C"},{"category":"Timbangan","is_new":false,"margin_pct":39.8,"name":"Timbangan Emas 500g 0.01","qty":76,"rank":2,"rank_change":0,"revenue":26524000.0,"sku":"TBG-500"},{"category":"Display","is_new":false,"margin_pct":48.6,"name":"Display Perhiasan Tier 3 Susun","qty":100,"rank":3,"rank_change":0,"revenue":18500000.0,"sku":"DPH-T3"},{"category":"Kotak Perhiasan","is_new":false,"margin_pct":56.9,"name":"Kotak Cincin Premium","qty":120,"rank":4,"rank_change":0,"revenue":7800000.0,"sku":"KCP-01"},{"category":"Kotak Perhiasan","is_new":false,"margin_pct":59.0,"name":"Kotak Kalung Beludru","qty":91,"rank":5,"rank_change":0,"revenue":7098000.0,"sku":"KKL-12"},{"category":"Display","is_new":false,"margin_pct":52.8,"name":"Display Cincin Roll","qty":75,"rank":6,"rank_change":0,"revenue":6675000.0,"sku":"DPC-R"},{"category":"Timbangan","is_new":false,"margin_pct":49.6,"name":"Timbangan Saku 200g","qty":40,"rank":7,"rank_change":0,"revenue":5160000.0,"sku":"TBG-200"},{"category":"Display","is_new":false,"margin_pct":53.7,"name":"Display Necklace Stand","qty":47,"rank":8,"rank_change":0,"revenue":3854000.0,"sku":"DPS-NK"},{"category":"Kotak Perhiasan","is_new":false,"margin_pct":56.4,"name":"Kotak Gelang Transparan","qty":54,"rank":9,"rank_change":0,"revenue":2970000.0,"sku":"KGL-BX"},{"category":"Alat","is_new":false,"margin_pct":60.0,"name":"Loupe Pembesar 30x","qty":62,"rank":10,"rank_change":0,"revenue":2790000.0,"sku":"LUP-30"}]}};
+const DEMO = true;
+let layout = 'brief';
+let tab = 'brief';
+
+// ───────── load ─────────
+async function load(){
+  try{
+    DATA = EMBEDDED;
+    const e = DATA.executive || {};
+    $('greeting').textContent = 'Selamat pagi, Owner Cahaya Senja';
+    $('dateLong').textContent = 'DEMO · data contoh per ' + (e.data_date || '-');
+    renderNav(); renderCockpit(); render();
+  }catch(err){ console.error(err); $('main').innerHTML = '<div class="empty">Gagal memuat data. Coba Refresh.</div>'; }
+}
+
+function setLayout(l){ layout = l; $('tgBrief').className = l==='brief'?'on':''; $('tgCockpit').className = l==='cockpit'?'on':''; renderCockpit(); }
+function setTab(t){ tab = t; renderNav(); render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function renderNav(){
+  $('nav').innerHTML = NAV.map(([k,l]) =>
+    `<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('');
+}
+
+function renderCockpit(){
+  const box = $('cockpit');
+  if(layout!=='cockpit'){ box.style.display='none'; return; }
+  box.style.display='block';
+  const e = DATA.executive||{}, c = DATA.cashflow||{}, al = DATA.alerts||[];
+  const crit = al.filter(a=>a.severity==='critical').length;
+  const kpis = [
+    ['Omset Hari Ini', rpJt(e.omset_today), (e.omset_today_vs_yest_pct!=null? (e.omset_today_vs_yest_pct<0?'▼':'▲')+' '+pctTxt(e.omset_today_vs_yest_pct)+'% vs kemarin':'')],
+    ['Laba MTD', rpJt(e.est_profit_mtd), 'margin '+(e.margin_pct??0)+'%'],
+    ['Saldo Kas', rpJt(c.balance), c.projected_negative?'perlu perhatian':'aman 30 hari'],
+    ['Target Bulan', (e.achievement_pct??0)+'%', rpJt(e.omset_mtd)+' / '+rpJt(e.target_month)],
+    ['Alert Aktif', String(al.length), crit?crit+' kritis':'tidak ada kritis'],
+  ];
+  $('cockpitGrid').innerHTML = kpis.map(k=>
+    `<div class="kpi-dark"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
+}
+
+function secHead(eyebrow, title){
+  return `<div class="sec-head"><div class="eyebrow">${eyebrow}</div><h2 class="sec">${title}</h2></div>`;
+}
+
+function render(){
+  const fn = {brief:vBrief, exec:vExec, market:vMarket, product:vProduct, ads:vAds,
+    inv:vInv, cash:vCash, alert:vAlert, blueprint:vBlueprint}[tab];
+  $('main').innerHTML = '<section>' + fn() + '</section>';
+}
+
+// ───────── A · Brief ─────────
+function vBrief(){
+  const b = DATA.brief||{}, al = DATA.alerts||[];
+  const ctaMap = {roas:'ads',ad:'ads',stock:'inv',oos:'inv',low_stock:'inv',bestseller:'inv',
+    channel:'market',omset:'exec',margin:'cash',cash:'cash'};
+  const labelMap = {ads:'Buka Iklan',inv:'Buka Inventory',market:'Buka Marketplace',exec:'Buka Ringkasan',cash:'Buka Cashflow'};
+  const prio = al.filter(a=>a.severity!=='info').slice(0,3).map((a,i)=>{
+    let dest='exec'; for(const k in ctaMap){ if((a.type||'').includes(k)){ dest=ctaMap[k]; break; } }
+    return `<div class="prio">
+      <div class="num">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div class="t">${esc(a.title)}</div><div class="w">${esc(a.message)}</div>
+      </div>
+      <button class="cta" onclick="setTab('${dest}')">${labelMap[dest]||'Buka'} ›</button>
+    </div>`;
+  }).join('') || '<div class="card empty">Tidak ada prioritas mendesak hari ini. Pertahankan momentum.</div>';
+
+  return `
+    <div class="brief-hero"><div class="glow"></div><div style="position:relative">
+      <div class="pill-dark">Brief Pagi · Auto-generated</div>
+      <h1 class="fd">Ringkasan 5 menit untuk hari ini</h1>
+      <div style="font-size:13px;color:#7a5a1e;font-weight:600">Data per ${esc((DATA.executive||{}).data_date||'-')}</div>
+      <p class="brief-body">${esc(b.body||'Belum ada brief. Upload data lalu klik Refresh.')}</p>
+    </div></div>
+    <div style="margin-top:22px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px;font-weight:800;color:#101a33;letter-spacing:-.01em">Prioritas Hari Ini</span>
+    </div>
+    <div style="margin-top:12px;display:grid;gap:12px">${prio}</div>
+    <div class="note-dark" style="margin-top:18px">
+      <span>📩</span><span>Brief ini bisa dikirim otomatis ke WhatsApp/Telegram tiap pagi via <b style="color:#fff">N8N + AI Agent</b>.</span>
+      <button class="btn-ghost" style="margin-left:auto;background:rgba(255,255,255,.12)" onclick="setTab('blueprint')">Lihat Blueprint ›</button>
+    </div>`;
+}
+
+// ───────── B · Executive ─────────
+function vExec(){
+  const e = DATA.executive||{};
+  const kpis = [
+    {l:'Omset Hari Ini', v:rpJt(e.omset_today), s:'data terakhir', d:deltaChip(e.omset_today_vs_yest_pct), color:'#101a33'},
+    {l:'Omset Kemarin', v:rpJt(e.omset_yesterday), s:'full day', color:'#101a33'},
+    {l:'Omset Bulan Ini', v:rpJt(e.omset_mtd), s:'MTD', color:'#101a33'},
+    {l:'Target Bulan', v:rpJt(e.target_month), s:(e.achievement_pct??0)+'% tercapai', color:'#101a33'},
+    {l:'Estimasi Laba', v:rpJt(e.est_profit_mtd), s:'margin '+(e.margin_pct??0)+'%', color:'#1f9d4d', accent:true},
+  ];
+  const cards = kpis.map(k=>`
+    <div class="${k.accent?'card-accent':'card'} kpi">
+      <div class="l">${k.l}</div>
+      <div class="v" style="color:${k.color}">${k.v}</div>
+      <div class="row"><span class="s">${k.s}</span>${k.d||''}</div>
+    </div>`).join('');
+  const ach = e.achievement_pct||0;
+  const remain = Math.max((e.target_month||0)-(e.omset_mtd||0),0);
+  const progress = `
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px">
+        <div><div style="font-size:13px;color:var(--muted);font-weight:600">Pencapaian Target Bulan Ini</div>
+          <div style="font-size:30px;font-weight:800;color:#101a33;letter-spacing:-.02em">${pctTxt(ach)}%</div></div>
+        <div style="text-align:right;font-size:13px;color:var(--muted)">${rpJt(e.omset_mtd)} <span style="color:#cbb98e">/</span> ${rpJt(e.target_month)}<br>
+          <span style="color:var(--gold-lbl);font-weight:700">Sisa ${rpJt(remain)}</span> menuju target</div>
+      </div>
+      <div style="margin-top:14px;height:14px;background:#f0e7d4;border-radius:999px;overflow:hidden">
+        <div style="width:${Math.min(ach,100)}%;height:100%;background:linear-gradient(90deg,#FFB11D,#FD6212);border-radius:999px"></div>
+      </div>
+    </div>`;
+  return secHead('Executive Summary','Performa Bulan Berjalan') +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${cards}</div>` + progress;
+}
+
+// ───────── C · Marketplace ─────────
+function vMarket(){
+  const list = (DATA.channels||{}).channels||[];
+  if(!list.length) return secHead('Marketplace Performance','Per Channel · Bulan Berjalan')+'<div class="card empty">Belum ada data penjualan.</div>';
+  const cards = list.map(c=>{
+    const col = CH_COLORS[c.channel]||'#888';
+    return `<div class="card" style="border-top:4px solid ${col}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:30px;height:30px;border-radius:9px;background:${col};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;flex:none">${CH_INITIAL[c.channel]||'?'}</div>
+          <span style="font-weight:800;font-size:15.5px;color:#101a33">${esc(c.channel)}</span>
+        </div>${deltaChip(c.growth_pct)}
+      </div>
+      <div style="margin-top:14px;font-size:24px;font-weight:800;color:#101a33;letter-spacing:-.02em">${rpJt(c.revenue)}</div>
+      <div style="font-size:11.5px;color:var(--muted)">omset bulan berjalan</div>
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid #f0e7d4;padding-top:12px">
+        <div><div style="font-size:11px;color:var(--muted)">Order</div><div style="font-size:16px;font-weight:700;color:#1a1205">${(c.orders||0).toLocaleString('id-ID')}</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">AOV</div><div style="font-size:16px;font-weight:700;color:#1a1205">${rp(c.aov)}</div></div>
+      </div></div>`;
+  }).join('');
+  return secHead('Marketplace Performance','Per Channel · Bulan Berjalan') +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr))">${cards}</div>`;
+}
+
+// ───────── D · Produk ─────────
+function vProduct(){
+  const list = (DATA.products||{}).products||[];
+  const rankChip = p=>{
+    if(p.is_new) return '<span class="chip" style="color:#2563eb;background:#e8f0ff">BARU</span>';
+    if(p.rank_change>0) return `<span class="chip" style="color:#1f9d4d;background:#E8F7EC">▲${p.rank_change}</span>`;
+    if(p.rank_change<0) return `<span class="chip" style="color:#C80807;background:#FDEBEA">▼${Math.abs(p.rank_change)}</span>`;
+    return '<span class="chip" style="color:#9a8a6a;background:#f4ecdc">–</span>';
+  };
+  const gcol = '38px 2.4fr 1.1fr .7fr .8fr .8fr';
+  const rows = list.length ? list.map(p=>`
+    <div class="tr" style="grid-template-columns:${gcol}">
+      <div style="font-weight:800;color:#cbb98e;font-size:15px">${p.rank}</div>
+      <div><div style="font-weight:700;font-size:14px;color:#1a1205;line-height:1.25">${esc(p.name)}</div>
+        <div style="font-size:11px;color:#9a8a6a">${esc(p.category)}</div></div>
+      <div style="text-align:right;font-weight:700;color:#101a33">${rpJt(p.revenue)}</div>
+      <div style="text-align:right;color:var(--slate)">${(p.qty||0).toLocaleString('id-ID')}</div>
+      <div style="text-align:right;font-weight:700;color:#1f9d4d">${p.margin_pct!=null?p.margin_pct+'%':'–'}</div>
+      <div style="text-align:center">${rankChip(p)}</div>
+    </div>`).join('') : '<div class="empty">Belum ada data produk per-SKU.</div>';
+  return secHead('Produk Terlaris','Top 10 Produk · Bulan Berjalan') +
+    `<div class="tbl"><div class="th" style="grid-template-columns:${gcol}">
+      <div>#</div><div>Produk</div><div style="text-align:right">Omset</div><div style="text-align:right">Qty</div>
+      <div style="text-align:right">Margin</div><div style="text-align:center">Rank</div></div>${rows}</div>`;
+}
+
+// ───────── E · Iklan ─────────
+function vAds(){
+  const a = DATA.advertising||{};
+  const adStatus = roas=>{
+    if(roas==null) return ['–','#8a7a5a','#f0e7d4'];
+    if(roas>=5) return ['naik','#1f9d4d','#E8F7EC'];
+    if(roas>=3.5) return ['stabil','#8a7a5a','#f0e7d4'];
+    return ['turun','#C80807','#FDEBEA'];
+  };
+  const top = `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+    <div style="background:#101a33;color:#fff;border-radius:18px;padding:18px">
+      <div style="font-size:12px;color:#9fb0cc;font-weight:600">Total Biaya Iklan</div>
+      <div style="font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-.02em">${rpJt(a.total_cost)}</div>
+      <div style="font-size:12px;color:#c9d3e6">${a.tacos!=null?a.tacos+'% dari omset (TACOS)':'—'}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">ROAS Keseluruhan</div>
+      <div style="font-size:26px;font-weight:800;margin-top:6px;color:#1f9d4d;letter-spacing:-.02em">${a.roas!=null?a.roas+'×':'–'}</div>
+      <div style="font-size:12px;color:var(--muted)">target ≥ 3,5×</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">ACOS</div>
+      <div style="font-size:26px;font-weight:800;margin-top:6px;color:#101a33;letter-spacing:-.02em">${a.acos!=null?a.acos+'%':'–'}</div>
+      <div style="font-size:12px;color:var(--muted)">TACOS ${a.tacos!=null?a.tacos+'%':'–'}</div></div></div>`;
+  const best = a.best_channel, worst = a.worst_channel;
+  const bw = `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:14px">
+    <div style="background:#E8F7EC;border:1px solid #b8e6c6;border-radius:16px;padding:16px">
+      <div style="font-size:11.5px;color:#1f7d3d;font-weight:700;letter-spacing:.04em;text-transform:uppercase">★ Performa Terbaik</div>
+      <div style="font-size:19px;font-weight:800;color:#101a33;margin-top:4px">${best?esc(best.channel):'–'}</div>
+      <div style="font-size:13px;color:#2a6a3d">${best?'ROAS '+best.roas+'× · layak di-scale up':'belum ada data'}</div></div>
+    <div style="background:#FDEBEA;border:1px solid #f2bdb9;border-radius:16px;padding:16px">
+      <div style="font-size:11.5px;color:#C80807;font-weight:700;letter-spacing:.04em;text-transform:uppercase">▼ Performa Terburuk</div>
+      <div style="font-size:19px;font-weight:800;color:#101a33;margin-top:4px">${worst?esc(worst.channel):'–'}</div>
+      <div style="font-size:13px;color:#a3322e">${worst?'ROAS '+worst.roas+'× · perlu cek kampanye':'belum ada data'}</div></div></div>`;
+  const gcol = '1.4fr 1fr 1fr 1.1fr';
+  const rows = (a.per_channel||[]).map(c=>{
+    const [st,sc,sb] = adStatus(c.roas);
+    return `<div class="tr" style="grid-template-columns:${gcol}">
+      <div style="font-weight:700;color:#1a1205">${esc(c.channel)}</div>
+      <div style="text-align:right;color:var(--slate)">${rpJt(c.cost)}</div>
+      <div style="text-align:right;font-weight:800;color:${c.roas!=null&&c.roas<3.5?'#C80807':'#1f9d4d'}">${c.roas!=null?c.roas+'×':'–'}</div>
+      <div style="text-align:right"><span class="chip" style="color:${sc};background:${sb}">${st}</span></div></div>`;
+  }).join('') || '<div class="empty">Belum ada data iklan.</div>';
+  const tbl = `<div class="tbl" style="margin-top:14px"><div class="th" style="grid-template-columns:${gcol}">
+    <div>Channel</div><div style="text-align:right">Biaya</div><div style="text-align:right">ROAS</div><div style="text-align:right">Status</div></div>${rows}</div>`;
+  return secHead('Advertising Performance','Iklan · 7 Hari Terakhir') + top + bw + tbl;
+}
+
+// ───────── F · Inventory ─────────
+function vInv(){
+  const inv = DATA.inventory||{};
+  const sevOf = d=> d==null?'ok' : (d<=5?'high':(d<=10?'warn':'ok'));
+  const dCol = {high:'#C80807',warn:'#E0930A',ok:'#1f9d4d'};
+  const dBg = {high:'#FDEBEA',warn:'#FFF4DC',ok:'#E8F7EC'};
+  const low = (inv.low_stock||[]).map(s=>{
+    const sev = sevOf(s.days_left);
+    return `<div class="card" style="border-left:4px solid ${dCol[sev]};padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span style="font-weight:700;font-size:14px;color:#1a1205">${esc(s.name)}</span>
+        <span class="chip" style="color:${dCol[sev]};background:${dBg[sev]}">± ${s.days_left} hari</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Sisa stok: ${s.stock_qty} unit · estimasi habis</div></div>`;
+  }).join('') || '<div class="empty">Tidak ada stok kritis. Aman.</div>';
+  const dead = (inv.dead_stock||[]).map(d=>`
+    <div class="card" style="padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span style="font-weight:700;font-size:14px;color:#1a1205">${esc(d.name)}</span>
+        <span class="chip" style="color:#9a8a6a;background:#f4ecdc">&gt; 30 hari</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Stok menumpuk: ${d.stock_qty} unit · pertimbangkan promo/bundling</div></div>`
+  ).join('') || '<div class="empty">Tidak ada barang diam.</div>';
+  return secHead('Inventory Alert','Stok yang Butuh Perhatian') +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div><div style="font-size:13px;font-weight:800;color:var(--gold-lbl);margin-bottom:10px">⏳ Hampir Habis</div>
+        <div style="display:grid;gap:10px">${low}</div></div>
+      <div><div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:10px">🕸 Tidak Bergerak &gt; 30 Hari</div>
+        <div style="display:grid;gap:10px">${dead}</div></div></div>`;
+}
+
+// ───────── G · Cashflow ─────────
+function vCash(){
+  const c = DATA.cashflow||{};
+  const cards = `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    <div style="background:linear-gradient(135deg,#101a33,#243a66);color:#fff;border-radius:18px;padding:18px">
+      <div style="font-size:12px;color:#9fb0cc;font-weight:600">💰 Saldo Kas</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;letter-spacing:-.02em">${rpJt(c.balance)}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">Hutang Supplier</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;color:#C80807;letter-spacing:-.02em">${rpJt(c.accounts_payable)}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">Piutang</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;color:#1f9d4d;letter-spacing:-.02em">${rpJt(c.accounts_receivable)}</div></div>
+    <div class="card"><div style="font-size:12px;color:var(--muted);font-weight:600">Pengeluaran Minggu Ini</div>
+      <div style="font-size:25px;font-weight:800;margin-top:6px;color:#101a33;letter-spacing:-.02em">${rpJt(c.week_expenses)}</div></div></div>`;
+  const proj = c.projected_cash_30d||0;
+  const predict = `<div style="background:#fff6e3;border:1px solid #f3dca8;border-radius:18px;padding:20px">
+    <div style="font-size:12.5px;color:var(--gold-lbl);font-weight:700;letter-spacing:.04em;text-transform:uppercase">Prediksi Kas · 30 Hari</div>
+    <div style="font-size:28px;font-weight:800;color:#101a33;margin-top:6px;letter-spacing:-.02em">${rpJt(proj)}</div>
+    <div style="font-size:13px;font-weight:700;margin-top:4px;color:${c.projected_negative?'#C80807':'#2a6a3d'}">${c.projected_negative?'⚠ Perlu perhatian — atur penagihan & tunda pengeluaran':'✓ Kas aman'}</div></div>`;
+  const bd = (c.breakdown||[]).map(b=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px">
+      <span style="color:var(--slate)">${esc(b.label)}</span><span style="font-weight:700;color:#1a1205">${rpJt(b.amount)}</span></div>`
+  ).join('') || '<div class="empty">Belum ada data pengeluaran.</div>';
+  const detail = `<div class="card"><div style="font-size:12.5px;color:var(--muted);font-weight:700;margin-bottom:12px">Rincian Pengeluaran Minggu Ini</div>${bd}</div>`;
+  return secHead('Cashflow Monitoring','Arus Kas Bisnis') + cards +
+    `<div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:14px">${predict}${detail}</div>`;
+}
+
+// ───────── H · Alert ─────────
+function vAlert(){
+  const al = DATA.alerts||[];
+  const sev = {critical:{bg:'#FDEBEA',bd:'#f2bdb9',dot:'#C80807',glow:'#f7cfcc',tc:'#C80807',tb:'#fbd9d6'},
+    warning:{bg:'#FFF6E3',bd:'#f3dca8',dot:'#E0930A',glow:'#f8e6bd',tc:'#b5740a',tb:'#fbeccb'},
+    info:{bg:'#fbf6ec',bd:'#ECE3D2',dot:'#8a7a5a',glow:'#ece0c8',tc:'#8a7a5a',tb:'#f0e7d4'}};
+  const items = al.length ? al.map(a=>{
+    const s = sev[a.severity]||sev.info;
+    const tagText = (a.type||'alert').split('_')[0];
+    return `<div class="alert" style="background:${s.bg};border:1px solid ${s.bd}">
+      <div class="dot" style="background:${s.dot};box-shadow:0 0 0 4px ${s.glow}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+          <span class="t">${esc(a.title)}</span>
+          <span class="tag" style="color:${s.tc};background:${s.tb}">${esc(tagText)}</span></div>
+        <div class="m">${esc(a.message)}</div></div></div>`;
+  }).join('') : '<div class="card empty">✅ Tidak ada anomali terdeteksi. Semua aman.</div>';
+  const rules = ['Omset turun > 20% vs kemarin / minggu lalu','ROAS channel di bawah target 3,5×',
+    'Best seller stok habis / < 7 hari','Margin turun di bawah ambang sehat',
+    'Biaya iklan melonjak > 150% rata-rata','Omset 1 marketplace anjlok > 40%','Prediksi kas 30 hari negatif'];
+  const ruleBox = `<div class="card" style="margin-top:20px"><div style="font-size:13px;font-weight:800;color:#101a33;margin-bottom:12px">Aturan Alert Aktif</div>
+    <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${rules.map(r=>
+      `<div style="display:flex;gap:9px;align-items:center;font-size:13px;color:var(--slate);background:var(--nav);border:1px solid #f0e7d4;border-radius:11px;padding:10px 12px">
+        <span style="color:#1f9d4d;font-weight:800;flex:none">✓</span><span>${r}</span></div>`).join('')}</div></div>`;
+  return secHead('CEO Alert Center','Deteksi Anomali Otomatis') + `<div style="display:grid;gap:11px">${items}</div>` + ruleBox;
+}
+
+// ───────── Blueprint (static, dokumentasi arsitektur nyata) ─────────
+function vBlueprint(){
+  const arch = [['1','Sumber Data','Upload XLSX/CSV seller center + (nanti) API resmi marketplace'],
+    ['2','Importer','Parse & normalisasi otomatis ke database'],['3','Database','SQLite → Supabase/PostgreSQL'],
+    ['4','Analytics','Agregasi KPI + deteksi anomali'],['5','Dashboard + AI Brief','Tampilan ini + brief harian via Claude']];
+  const archHtml = arch.map(s=>`<div style="display:flex;align-items:center;gap:8px;flex:none">
+    <div style="width:180px;background:var(--nav);border:1px solid #f0e7d4;border-top:4px solid var(--gold);border-radius:14px;padding:13px 14px">
+      <div style="font-size:11px;color:var(--gold-lbl);font-weight:800">LANGKAH ${s[0]}</div>
+      <div style="font-size:15px;font-weight:800;color:#101a33;margin-top:3px">${s[1]}</div>
+      <div style="font-size:11.5px;color:#6a5a3a;margin-top:4px;line-height:1.4">${s[2]}</div></div>
+    <span style="color:#cbb98e;font-size:20px;font-weight:800;flex:none">›</span></div>`).join('');
+  const tables = [['channels','nama channel · status'],['products','sku · nama · kategori · hpp'],
+    ['sales_daily','tanggal · channel · sku · qty · omset · order'],['ad_spend_daily','tanggal · channel · biaya · roas · konversi'],
+    ['inventory_snapshot','tanggal · sku · stok'],['cash_ledger','tanggal · tipe(in/out/ar/ap) · nominal · jatuh tempo'],
+    ['targets','bulan · target omset'],['alerts','waktu · tipe · severity · pesan'],['daily_brief','tanggal · isi brief']];
+  const tblHtml = tables.map(t=>`<div style="background:var(--nav);border:1px solid #f0e7d4;border-radius:11px;padding:10px 13px">
+    <code style="font-size:13px;font-weight:800;color:#9a6a0a">${t[0]}</code>
+    <div style="font-size:11.5px;color:#6a5a3a;margin-top:2px">${t[1]}</div></div>`).join('');
+  const stack = [['Database','SQLite → Supabase','Mulai nol-config, naik ke API otomatis'],
+    ['Backend','Python + Flask','Ringan, sudah dikuasai'],['Importer','openpyxl','Baca XLSX & CSV'],
+    ['Dashboard','HTML + JS','Mobile-first, satu file'],['AI','Claude API','Generate Daily Brief'],
+    ['Automasi','N8N','Scheduler & ETL (fase lanjut)']];
+  const stackHtml = stack.map(t=>`<div style="display:flex;gap:11px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:8px">
+    <span style="font-size:11px;font-weight:800;color:#fff;background:#101a33;padding:3px 9px;border-radius:999px;flex:none;min-width:72px;text-align:center">${t[0]}</span>
+    <div><div style="font-size:13.5px;font-weight:800;color:#1a1205">${t[1]}</div><div style="font-size:11.5px;color:#6a5a3a">${t[2]}</div></div></div>`).join('');
+  const daily = ['Per channel: omset, jumlah order','Per channel: biaya iklan & omset iklan (ROAS/ACOS/TACOS)',
+    'Per SKU: qty terjual, omset, sisa stok','Kas: saldo, pemasukan & pengeluaran','Hutang supplier & piutang','Target bulan (set sekali)'];
+  const dailyHtml = daily.map(d=>`<div style="display:flex;gap:9px;align-items:flex-start;background:rgba(255,255,255,.07);border-radius:11px;padding:11px 13px;font-size:13px;color:#dbe2ee">
+    <span style="color:#FFB11D;font-weight:800;flex:none">●</span><span>${d}</span></div>`).join('');
+  const roadmap = [['Minggu 1','MVP',['Skema DB + upload XLSX/CSV','Executive Summary + Daily Brief','Alert engine dasar']],
+    ['Minggu 2','Produk & Iklan',['Top 10 produk + margin','ROAS/ACOS/TACOS per channel']],
+    ['Minggu 3','Inventory & Kas',['Alert stok & dead stock','Monitoring kas + prediksi 30 hari']],
+    ['Minggu 4','Otomasi & AI',['Pindah ke N8N + Supabase','AI brief & notif WA/Telegram tiap pagi']]];
+  const roadHtml = roadmap.map(w=>`<div class="card" style="padding:16px">
+    <div style="display:inline-block;font-size:11px;font-weight:800;color:#9a6a0a;background:#fdf2da;border:1px solid #f0d9a4;padding:3px 10px;border-radius:999px">${w[0]}</div>
+    <div style="font-size:15px;font-weight:800;color:#101a33;margin:9px 0 8px">${w[1]}</div>
+    <div style="display:grid;gap:6px">${w[2].map(it=>`<div style="display:flex;gap:7px;font-size:12.5px;color:#5a5240;line-height:1.4"><span style="color:var(--gold);flex:none">•</span><span>${it}</span></div>`).join('')}</div></div>`).join('');
+
+  return secHead('Technical Blueprint','Cara Membangun Sistem Ini') +
+    `<div class="card"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:14px">1 · Arsitektur Sistem</div>
+      <div class="scroll" style="display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding-bottom:6px">${archHtml}</div></div>
+    <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:14px">
+      <div class="card"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:12px">2 · Struktur Database</div>
+        <div style="display:grid;gap:8px">${tblHtml}</div></div>
+      <div class="card"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:12px">3 · Tech Stack</div>
+        <div style="display:grid;gap:8px">${stackHtml}</div></div></div>
+    <div style="margin-top:14px;background:#101a33;border-radius:18px;padding:20px;color:#fff">
+      <div style="font-size:14px;font-weight:800;margin-bottom:12px">4 · Data Wajib Tiap Hari</div>
+      <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">${dailyHtml}</div></div>
+    <div style="margin-top:14px"><div style="font-size:14px;font-weight:800;color:#101a33;margin-bottom:12px">5 · Roadmap 30 Hari</div>
+      <div class="gridfit" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${roadHtml}</div></div>`;
+}
+
+// ───────── actions ─────────
+async function refresh(){ toast('Ini versi DEMO statis — data contoh tetap.'); }
+function upload(){ toast('Versi DEMO statis: untuk upload data XLSX/CSV asli, jalankan versi backend (lihat README).'); }
+$('file').addEventListener('change', e=>upload(e.target.files));
+
+setLayout('brief');
+load();
+/* demo statis: tanpa auto-refresh */
+</script>
+</body>
+</html>
