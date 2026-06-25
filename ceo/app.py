@@ -123,12 +123,21 @@ def api_upload():
     return jsonify({"ok": all(r.get("ok") for r in results), "results": results})
 
 
-@app.route("/api/reset", methods=["POST"])
+@app.route("/api/reset", methods=["GET", "POST"])
+@app.route("/reset", methods=["GET", "POST"])
 def api_reset():
-    """Hapus semua data transaksi (mis. menghapus data contoh sebelum isi data asli)."""
+    """Hapus semua data transaksi (mis. menghapus data contoh sebelum isi data asli).
+    Bisa via tombol (POST) atau cukup buka alamat /reset di browser (GET)."""
     for t in ["sales_daily", "ad_spend_daily", "inventory_snapshot",
               "cash_ledger", "alerts", "daily_brief", "products"]:
         execute("DELETE FROM %s" % t)
+    if request.method == "GET":
+        return (
+            "<html><body style='font-family:sans-serif;background:#F6EFE2;color:#101a33;"
+            "text-align:center;padding:60px'><h2>✅ Data contoh dihapus</h2>"
+            "<p>Sekarang buka dashboard lalu klik <b>⬆ Upload</b> untuk masukkan file asli Anda.</p>"
+            "<p><a href='/' style='color:#E0930A;font-weight:700'>← Kembali ke Dashboard</a></p></body></html>"
+        )
     return jsonify({"ok": True, "message": "Semua data dihapus. Silakan upload data asli."})
 
 
