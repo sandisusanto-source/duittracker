@@ -138,6 +138,7 @@ h2.sec{font-size:24px;font-weight:800;margin:4px 0 0;color:var(--heading);letter
       </div>
       <button class="btn-ghost" onclick="document.getElementById('file').click()">⬆ Upload</button>
       <button class="btn-ghost" id="refreshBtn" onclick="refresh()">↻</button>
+      <button class="btn-ghost" onclick="resetData()" title="Hapus semua data (termasuk data contoh)">🗑</button>
     </div>
   </div>
 </header>
@@ -213,7 +214,7 @@ function renderCockpit(){
   const crit = al.filter(a=>a.severity==='critical').length;
   const kpis = [
     ['Omset Hari Ini', rpJt(e.omset_today), (e.omset_today_vs_yest_pct!=null? (e.omset_today_vs_yest_pct<0?'▼':'▲')+' '+pctTxt(e.omset_today_vs_yest_pct)+'% vs kemarin':'')],
-    ['Laba MTD', rpJt(e.est_profit_mtd), 'margin '+(e.margin_pct??0)+'%'],
+    ['Laba MTD', (e.est_profit_mtd!=null?rpJt(e.est_profit_mtd):'—'), (e.margin_pct!=null?'margin '+e.margin_pct+'%':'isi HPP dulu')],
     ['Saldo Kas', rpJt(c.balance), c.projected_negative?'perlu perhatian':'aman 30 hari'],
     ['Target Bulan', (e.achievement_pct??0)+'%', rpJt(e.omset_mtd)+' / '+rpJt(e.target_month)],
     ['Alert Aktif', String(al.length), crit?crit+' kritis':'tidak ada kritis'],
@@ -274,7 +275,7 @@ function vExec(){
     {l:'Omset Kemarin', v:rpJt(e.omset_yesterday), s:'full day', color:'#101a33'},
     {l:'Omset Bulan Ini', v:rpJt(e.omset_mtd), s:'MTD', color:'#101a33'},
     {l:'Target Bulan', v:rpJt(e.target_month), s:(e.achievement_pct??0)+'% tercapai', color:'#101a33'},
-    {l:'Estimasi Laba', v:rpJt(e.est_profit_mtd), s:'margin '+(e.margin_pct??0)+'%', color:'#1f9d4d', accent:true},
+    {l:'Estimasi Laba', v:(e.est_profit_mtd!=null?rpJt(e.est_profit_mtd):'Belum ada'), s:(e.margin_pct!=null?'margin '+e.margin_pct+'%':'isi HPP dulu'), color:'#1f9d4d', accent:true},
   ];
   const cards = kpis.map(k=>`
     <div class="${k.accent?'card-accent':'card'} kpi">
@@ -536,6 +537,11 @@ async function refresh(){
   try{ await fetch('/api/refresh',{method:'POST'}); await load(); toast('Diperbarui'); }
   catch(e){ toast('Gagal refresh'); }
   b.textContent='↻';
+}
+async function resetData(){
+  if(!confirm('Hapus SEMUA data (termasuk data contoh) untuk mulai dengan data asli? Tidak bisa dibatalkan.')) return;
+  try{ await fetch('/api/reset',{method:'POST'}); toast('Data dihapus. Silakan upload file asli.'); load(); }
+  catch(e){ toast('Gagal reset'); }
 }
 async function upload(files){
   if(!files||!files.length) return;

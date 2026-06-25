@@ -85,11 +85,18 @@ def executive():
     tgt = query_one("SELECT revenue_target FROM targets WHERE month=? AND channel='ALL'", (month,))
     target = tgt["revenue_target"] if tgt else 0
 
-    # estimasi laba MTD = omset - HPP - biaya iklan
+    # estimasi laba MTD = omset - HPP - biaya iklan.
+    # Hanya dihitung kalau HPP (cost_price) memang sudah diisi; kalau belum,
+    # laba/margin = None supaya tidak menampilkan angka palsu (modal dianggap 0).
     cogs_mtd = _cogs(month_start, today)
     ad_mtd = _ad_cost(month_start, today)
-    est_profit = omset_mtd - cogs_mtd - ad_mtd
-    margin_pct = round(est_profit / omset_mtd * 100, 1) if omset_mtd else 0
+    hpp_set = query_one("SELECT COUNT(*) c FROM products WHERE cost_price > 0")["c"]
+    if hpp_set and cogs_mtd > 0:
+        est_profit = round(omset_mtd - cogs_mtd - ad_mtd)
+        margin_pct = round(est_profit / omset_mtd * 100, 1) if omset_mtd else 0
+    else:
+        est_profit = None
+        margin_pct = None
 
     # proyeksi akhir bulan (linear dari run-rate)
     day_n = int(today[8:10])
@@ -106,8 +113,9 @@ def executive():
         "achievement_pct": round(omset_mtd / target * 100, 1) if target else None,
         "projected_month": projected,
         "projected_vs_target_pct": round(projected / target * 100, 1) if target else None,
-        "est_profit_mtd": round(est_profit),
+        "est_profit_mtd": est_profit,
         "margin_pct": margin_pct,
+        "hpp_missing": not (hpp_set and cogs_mtd > 0),
     }
 
 

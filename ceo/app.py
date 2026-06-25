@@ -24,6 +24,7 @@ import analytics
 import alerts as alert_mod
 from db import init_db, query, execute
 from importer import import_file
+import tiktok_importer
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
@@ -101,7 +102,11 @@ def api_upload():
     results = []
     for f in request.files.getlist("file"):
         try:
-            res = import_file(f.filename, f.read())
+            content = f.read()
+            # coba format native TikTok dulu, lalu fallback ke importer umum
+            res = tiktok_importer.detect_and_import(f.filename, content)
+            if res is None:
+                res = import_file(f.filename, content)
         except Exception as e:
             logger.exception("Import error")
             res = {"ok": False, "error": str(e), "filename": f.filename}
@@ -113,6 +118,15 @@ def api_upload():
     except Exception as e:
         logger.exception("Recompute error: %s", e)
     return jsonify({"ok": all(r.get("ok") for r in results), "results": results})
+
+
+@app.route("/api/reset", methods=["POST"])
+def api_reset():
+    """Hapus semua data transaksi (mis. menghapus data contoh sebelum isi data asli)."""
+    for t in ["sales_daily", "ad_spend_daily", "inventory_snapshot",
+              "cash_ledger", "alerts", "daily_brief", "products"]:
+        execute("DELETE FROM %s" % t)
+    return jsonify({"ok": True, "message": "Semua data dihapus. Silakan upload data asli."})
 
 
 @app.route("/api/refresh", methods=["POST"])
