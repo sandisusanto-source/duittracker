@@ -14,7 +14,7 @@ services:
       - key: PYTHON_VERSION
         value: "3.11.9"
       - key: SEED_DEMO
-        value: "1"            # muat data contoh saat pertama deploy
+        value: "0"            # data contoh dimatikan — pakai data asli (upload)
       # Opsional — isi kalau mau Daily Brief versi AI:
       # - key: ANTHROPIC_API_KEY
       #   sync: false
