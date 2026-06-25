@@ -152,6 +152,14 @@ h2.sec{font-size:24px;font-weight:800;margin:4px 0 0;color:var(--heading);letter
 
 <div class="toast" id="toast"></div>
 
+<div id="overlay" style="display:none;position:fixed;inset:0;background:rgba(16,26,51,.78);z-index:200;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:18px;padding:24px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.45)">
+    <div id="ovTitle" style="font-size:18px;font-weight:800;color:#101a33;margin-bottom:12px"></div>
+    <div id="ovBody" style="font-size:13.5px;color:#3a4860;line-height:1.65;white-space:pre-wrap;max-height:50vh;overflow:auto"></div>
+    <button id="ovClose" onclick="document.getElementById('overlay').style.display='none'" style="display:none;margin-top:16px;background:#E0930A;color:#fff;border:none;font-weight:700;padding:11px 20px;border-radius:999px;cursor:pointer;font-family:inherit;font-size:14px">Tutup & lihat dashboard</button>
+  </div>
+</div>
+
 <script>
 // ───────── helpers ─────────
 const $ = id => document.getElementById(id);
@@ -545,15 +553,26 @@ async function resetData(){
 }
 async function upload(files){
   if(!files||!files.length) return;
+  const ov=$('overlay'), t=$('ovTitle'), b=$('ovBody'), c=$('ovClose');
+  ov.style.display='flex'; c.style.display='none';
+  t.textContent='⏳ Memproses '+files.length+' file…';
+  b.textContent='Mengunggah & menghitung. File "Semua Pesanan" isinya ribuan baris, jadi bisa 5–15 detik. Mohon tunggu, jangan tutup halaman.';
   const fd=new FormData(); for(const f of files) fd.append('file', f);
-  toast('Mengunggah '+files.length+' file…');
   try{
     const r=await fetch('/api/upload',{method:'POST',body:fd});
     const d=await r.json();
-    const ok=d.results.filter(x=>x.ok);
-    toast(ok.length? 'Terimport: '+ok.map(x=>x.type+' ('+x.rows_imported+')').join(', ') : 'Gagal: '+((d.results[0]||{}).error||'format tak dikenal'));
+    const lines=(d.results||[]).map(x=> x.ok
+      ? '✅ '+(x.filename||x.type)+'\n   → '+x.type+' ('+x.rows_imported+' baris)'+(x.note?'\n   '+x.note:'')
+      : '❌ '+(x.filename||'?')+'\n   → '+(x.error||'gagal dibaca'));
+    t.textContent=d.ok? '✅ Selesai diproses' : '⚠️ Sebagian/semua gagal';
+    b.textContent=lines.join('\n\n')+'\n\nKlik tombol di bawah untuk lihat dashboard.';
+    c.style.display='inline-block';
     load();
-  }catch(e){ toast('Upload gagal'); }
+  }catch(e){
+    t.textContent='❌ Gagal upload';
+    b.textContent='Terjadi error: '+e+'\n\nCoba lagi, atau cek tab Logs di Render.';
+    c.style.display='inline-block';
+  }
 }
 $('file').addEventListener('change', e=>upload(e.target.files));
 
