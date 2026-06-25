@@ -25,6 +25,7 @@ import alerts as alert_mod
 from db import init_db, query, execute
 from importer import import_file
 import tiktok_importer
+import accurate_importer
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
@@ -103,8 +104,10 @@ def api_upload():
     for f in request.files.getlist("file"):
         try:
             content = f.read()
-            # coba format native TikTok dulu, lalu fallback ke importer umum
+            # urutan deteksi: TikTok -> Accurate -> importer umum
             res = tiktok_importer.detect_and_import(f.filename, content)
+            if res is None:
+                res = accurate_importer.detect_and_import(f.filename, content)
             if res is None:
                 res = import_file(f.filename, content)
         except Exception as e:

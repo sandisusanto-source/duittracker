@@ -289,11 +289,15 @@ def inventory():
             (s["sku"], week_from, today),
         )["q"]
         daily_rate = sold / 7.0
-        days_left = round(s["stock_qty"] / daily_rate) if daily_rate > 0 else None
-        if days_left is not None and days_left <= 7:
+        stock = s["stock_qty"]
+        # hanya produk yang SEDANG LAKU yang relevan untuk "hampir habis"
+        if daily_rate <= 0:
+            continue
+        days_left = 0 if stock <= 0 else round(stock / daily_rate)
+        if days_left <= 7:
             low.append({
                 "sku": s["sku"], "name": s["name"],
-                "stock_qty": s["stock_qty"], "days_left": days_left,
+                "stock_qty": stock, "days_left": days_left,
             })
     low.sort(key=lambda x: x["days_left"])
 
